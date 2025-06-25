@@ -1,0 +1,2708 @@
+== OpenShift
+:toc: left
+:icons: font
+:source-highlighter: highlight.js
+:toclevels: 3
+:toc-title: Contenidos
+
+== Introducción
+
+=== ¿Qué es OpenShift? Diferencias con Kubernetes y Docker.
+
+==== ¿Qué es OpenShift?
+
+OpenShift es una plataforma de aplicaciones desarrollada por Red Hat que permite desplegar, gestionar y escalar aplicaciones en contenedores de forma sencilla y segura, integrando herramientas adicionales sobre Kubernetes para facilitar la administración, la seguridad y la productividad en entornos empresariales y multicloud. OpenShift gestiona todo el ciclo de vida de las aplicaciones, desde el desarrollo hasta el mantenimiento, y puede operar tanto en infraestructuras locales como en nubes públicas o privadas.
+
+==== Diferencias entre OpenShift y Kubernetes
+
+- *Base tecnológica:* OpenShift utiliza Kubernetes como núcleo para la orquestación de contenedores, pero añade componentes propios como Red Hat Enterprise Linux CoreOS, un registro de contenedores integrado y servicios adicionales para la gestión empresarial.
+- *Facilidad de uso:* OpenShift ofrece una experiencia más integrada y lista para usar, con una consola web avanzada y herramientas CLI (`oc`) que amplían las capacidades de `kubectl` de Kubernetes. Kubernetes, en cambio, requiere más configuración manual y conocimientos técnicos para su despliegue y operación.
+- *Seguridad:* OpenShift incluye configuraciones de seguridad predefinidas (como SELinux) y políticas estrictas desde el inicio, mientras que en Kubernetes la seguridad debe configurarse manualmente.
+- *Instalación y soporte:* OpenShift proporciona métodos de instalación automatizados y soporte empresarial, ideal para organizaciones que buscan una solución integral. Kubernetes es más flexible y modular, pero depende del usuario para integrar y mantener los diferentes componentes.
+- *Ciclo de vida de imágenes:* OpenShift permite crear imágenes de contenedores automáticamente a partir del código fuente usando la funcionalidad Source-to-Image (S2I), facilitando el trabajo de los desarrolladores. En Kubernetes, las imágenes Docker deben ser generadas previamente por el usuario.
+
+==== Diferencias entre OpenShift y Docker
+
+- *Propósito:* Docker es una tecnología para crear y ejecutar contenedores de aplicaciones, enfocada en la estandarización y portabilidad del entorno de desarrollo. OpenShift, por su parte, es una plataforma completa para la orquestación y gestión de aplicaciones en contenedores a nivel empresarial, cubriendo todo el ciclo de vida de las aplicaciones.
+- *Alcance:* Docker se utiliza principalmente para la creación y ejecución de contenedores individuales, mientras que OpenShift gestiona clústeres de contenedores y ofrece servicios adicionales como balanceo de carga, autoescalado, seguridad avanzada y gestión de usuarios.
+- *Integración:* OpenShift puede utilizar imágenes de Docker, pero añade capas de gestión, automatización y seguridad que no están presentes en Docker por sí solo.
+- *Documentación y soporte:* OpenShift destaca por su documentación actualizada y soporte empresarial, mientras que Docker, aunque ampliamente adoptado, puede tener menos recursos de soporte en comparación.
+
+==== Tabla Resumen
+|===
+| Característica         | OpenShift                                   | Kubernetes                                | Docker                                  
+| Orquestación          | Sí (basado en Kubernetes)                   | Sí                                        | No (solo contenedores individuales)     
+| Seguridad             | Avanzada, preconfigurada                    | Manual, configurable                      | Básica, depende del usuario             
+| Experiencia de usuario| Integrada, consola web y CLI propia         | Modular, CLI (`kubectl`)                  | CLI (`docker`)                          
+| Automatización        | Alta (S2I, pipelines, CI/CD)                | Media (requiere integración extra)        | Baja (scripts personalizados)            
+| Soporte empresarial   | Sí, por Red Hat                             | Variable, según proveedor                 | No directamente                         
+|===
+
+OpenShift se posiciona como una solución integral y empresarial para la gestión de aplicaciones en contenedores, facilitando la adopción de Kubernetes y superando las limitaciones de Docker en entornos productivos.
+
+
+=== Ventajas y casos de uso de OpenShift en entornos empresariales.
+
+==== Ventajas de OpenShift en empresas
+
+- *Nube híbrida y multicloud:* OpenShift permite desplegar y gestionar aplicaciones tanto en entornos de nube pública como privada, facilitando la portabilidad y evitando el bloqueo con proveedores específicos.
+- *Centralización y gestión simplificada:* Ofrece una interfaz intuitiva y herramientas avanzadas para monitorizar y gestionar múltiples clústeres de Kubernetes desde una sola plataforma, reduciendo la complejidad operativa.
+- *Automatización y CI/CD:* Integra flujos de trabajo de integración y entrega continua (CI/CD), lo que agiliza los ciclos de desarrollo y despliegue de aplicaciones.
+- *Seguridad avanzada:* Incluye configuraciones de seguridad predefinidas y políticas estrictas desde el sistema operativo hasta las aplicaciones, garantizando un entorno robusto y seguro desde el inicio.
+- *Estandarización y portabilidad:* Proporciona un marco homogéneo para desplegar aplicaciones en cualquier infraestructura, facilitando la colaboración entre equipos y la movilidad de cargas de trabajo.
+- *Escalabilidad y elasticidad:* Permite escalar aplicaciones fácilmente según la demanda, optimizando el uso de recursos y costes, gracias a su modelo de pago por uso y gestión dinámica de contenedores.
+- *Modernización y soporte empresarial:* Ofrece soporte profesional y recursos de Red Hat, facilitando la modernización de aplicaciones y la adopción de arquitecturas de microservicios y contenedores.
+
+==== Tabla resumen: Ventajas clave de OpenShift
+|===
+| Ventaja                        | Descripción                                                                                  
+| Nube híbrida y multicloud      | Portabilidad y flexibilidad para operar en cualquier infraestructura                  
+| Seguridad avanzada             | Políticas predefinidas y protección integral desde el sistema operativo               
+| Automatización y CI/CD         | Flujos de trabajo integrados para acelerar el desarrollo y despliegue                
+| Escalabilidad                  | Ajuste dinámico de recursos y pago por uso optimizado                                    
+| Estandarización                | Marco homogéneo para colaboración y movilidad de aplicaciones                            
+| Soporte empresarial            | Asistencia profesional y recursos de Red Hat para la modernización de TI             
+|===
+
+
+== Fundamentos de Contenedores y PaaS
+=== Introducción a la virtualización y contenedores
+
+==== ¿Qué es la virtualización?
+
+La virtualización es una tecnología que permite crear versiones virtuales de recursos informáticos, como servidores, sistemas operativos, almacenamiento o redes, sobre una infraestructura física existente. Esto se logra mediante una capa de software llamada hipervisor, que simula el hardware y permite ejecutar múltiples máquinas virtuales (VM), cada una con su propio sistema operativo y aplicaciones, de forma aislada y segura en un mismo servidor físico.
+
+Principales características de la virtualización:
+- Permite ejecutar varios sistemas operativos diferentes en un solo servidor físico.
+- Cada máquina virtual es completamente independiente y está aislada de las demás.
+- Facilita la consolidación de servidores, el ahorro de costes y la gestión eficiente de recursos.
+
+==== ¿Qué son los contenedores?
+
+Los contenedores son una forma de virtualización a nivel de sistema operativo que permite empaquetar aplicaciones junto con todas sus dependencias en unidades ligeras y portátiles. A diferencia de las máquinas virtuales, los contenedores comparten el núcleo del sistema operativo anfitrión, lo que los hace mucho más eficientes en el uso de recursos y con tiempos de arranque mucho menores.
+
+Ventajas clave de los contenedores:
+- Portabilidad: Se pueden ejecutar en cualquier entorno compatible, desde servidores locales hasta la nube, sin modificar el código.
+- Eficiencia: Usan menos recursos que las VM, ya que no requieren un sistema operativo completo por instancia.
+- Escalabilidad: Permiten escalar aplicaciones de forma rápida y sencilla, ideal para arquitecturas de microservicios y DevOps.
+- Aislamiento: Cada contenedor está aislado, lo que evita conflictos entre aplicaciones y facilita la seguridad.
+
+==== Diferencias entre virtualización y contenedores
+
+|===
+| Característica         | Máquinas Virtuales (VM)                           | Contenedores                                    
+| Nivel de virtualización| Virtualizan hardware completo (hipervisor)       | Virtualizan a nivel de sistema operativo        
+| Sistema operativo     | Cada VM tiene su propio SO                        | Comparten el SO anfitrión                       
+| Consumo de recursos   | Alto (requieren SO completo por VM)               | Bajo (solo la app y dependencias)               
+| Tiempo de arranque    | Lento (minutos)                                   | Rápido (segundos)                               
+| Portabilidad          | Limitada, depende del SO de la VM                 | Muy alta, ejecutables en cualquier entorno      
+| Aislamiento           | Completo, mayor seguridad                         | Parcial, depende del aislamiento del SO         
+| Escenarios ideales    | Diversidad de SO, aplicaciones monolíticas        | Microservicios, DevOps, CI/CD, aplicaciones ágiles
+|===
+
+
+
+==== Resumen
+
+La virtualización tradicional, mediante máquinas virtuales, es ideal para ejecutar diferentes sistemas operativos y aplicaciones monolíticas con alto aislamiento y seguridad. Los contenedores, en cambio, son óptimos para entornos modernos donde se requiere portabilidad, eficiencia, escalabilidad y despliegue rápido de aplicaciones, especialmente en arquitecturas de microservicios y DevOps.
+
+=== Conceptos básicos de Docker y ciclo de vida de aplicaciones en contenedores
+
+==== Conceptos básicos de Docker
+
+Docker es una plataforma de software que permite crear, probar y desplegar aplicaciones rápidamente mediante el uso de contenedores, que son unidades ligeras y portátiles que incluyen todo lo necesario para ejecutar una aplicación: código, bibliotecas, herramientas del sistema y dependencias. Los contenedores se ejecutan de forma aislada sobre el sistema operativo anfitrión, lo que garantiza portabilidad y consistencia entre entornos de desarrollo, pruebas y producción.
+
+Principales conceptos de Docker:
+- *Imagen (Image):* Plantilla de solo lectura que contiene el sistema operativo, las dependencias y el código necesario para ejecutar una aplicación. Las imágenes pueden almacenarse y compartirse mediante registros como Docker Hub.
+- *Contenedor (Container):* Instancia en ejecución de una imagen. Los contenedores son efímeros y ligeros, y pueden ejecutarse, detenerse, reiniciarse o eliminarse fácilmente.
+- *Registro (Registry):* Repositorio donde se almacenan y distribuyen imágenes de Docker, permitiendo compartirlas entre equipos y automatizar despliegues.
+- *Volumen (Volume):* Mecanismo para persistir datos fuera del ciclo de vida del contenedor, evitando la pérdida de información al eliminar o reiniciar contenedores.
+- *Red (Network):* Sistema que permite la comunicación entre contenedores y con el exterior, facilitando la construcción de aplicaciones distribuidas.
+
+==== Ciclo de vida de aplicaciones en contenedores
+
+El ciclo de vida de una aplicación en Docker abarca desde el desarrollo hasta la eliminación del contenedor, siguiendo estos pasos principales:
+
+1. *Desarrollo de la aplicación:* Se crea y prueba el código fuente de la aplicación en el entorno local.
+2. *Creación de la imagen Docker:* Se genera una imagen que contiene la aplicación y todas sus dependencias, normalmente usando un archivo Dockerfile.
+3. *Pruebas en entorno de desarrollo o prueba:* La imagen se ejecuta en contenedores para validar su funcionamiento antes de pasar a producción.
+4. *Distribución de la imagen:* La imagen se almacena en un registro (público o privado) para su distribución y despliegue.
+5. *Despliegue en producción:* Se ejecutan contenedores a partir de la imagen en los entornos de producción, aprovechando la portabilidad y escalabilidad de Docker.
+6. *Actualización o modificación:* Si la aplicación requiere cambios, se actualiza el código, se genera una nueva imagen y se repite el ciclo.
+
+A nivel técnico, el ciclo de vida de un contenedor Docker consta de las siguientes etapas:
+- *Created:* El contenedor se crea a partir de una imagen, pero aún no está en ejecución.
+- *Running:* El contenedor está
+
+=== Persistencia de datos en contenedores
+
+La persistencia de datos en contenedores es fundamental para aplicaciones que requieren conservar información más allá del ciclo de vida del contenedor, como bases de datos o sistemas de gestión de archivos. Por defecto, los datos generados dentro de un contenedor Docker son efímeros y se pierden al eliminar o reiniciar el contenedor. Para evitar esta pérdida, Docker ofrece mecanismos de almacenamiento persistente: volúmenes, bind mounts y tmpfs.
+
+==== Opciones principales para la persistencia de datos
+
+- *Volúmenes (Volumes):* Son unidades de almacenamiento gestionadas por Docker, independientes del ciclo de vida del contenedor. Permiten almacenar datos de forma persistente y compartirlos entre varios contenedores. Los volúmenes son la opción recomendada por Docker para la gestión de datos persistentes.
+- *Bind mounts:* Permiten montar directorios o archivos del sistema host directamente en el contenedor. Son útiles para desarrollo y pruebas, pero menos portables y gestionados que los volúmenes.
+- *Tmpfs mounts:* Almacenan datos en la memoria RAM del host y se usan para información temporal que no requiere persistencia tras el reinicio del contenedor.
+
+==== Ventajas de usar almacenamiento persistente
+
+- Los datos sobreviven a la eliminación o actualización de los contenedores.
+- Permite compartir información entre varios contenedores.
+- Facilita la realización de copias de seguridad y la migración de datos.
+- Desacopla la aplicación de los datos, haciendo los contenedores más livianos y portables.
+
+==== Ejemplo de uso de volúmenes en Docker
+
+.Creación de un volumen:
+[source,console]
+----
+docker volume create my_volume
+----
+
+.Montaje del volumen en un contenedor:
+[source,console]
+----
+docker run -d -v mi_volumen:/ruta/en/contenedor nombre_imagen
+----
+
+En este ejemplo, todo lo que se escriba en `/ruta/en/contenedor` se almacenará en el volumen y persistirá aunque el contenedor se elimine.
+
+.Compartición de volúmenes entre contenedores:
+[source,console]
+----
+docker run -d -v mi_volumen:/datos contenedor1
+docker run -d -v mi_volumen:/datos contenedor2
+----
+
+
+== Orquestación de Contenedores con Kubernetes
+=== Principios de Kubernetes: pods, servicios, despliegues y namespaces
+
+==== Pods
+Un pod es la unidad mínima de despliegue en Kubernetes. Representa una instancia única de una aplicación y puede contener uno o varios contenedores que comparten recursos de red y almacenamiento. Los pods son efímeros y se recrean automáticamente si fallan.
+
+[source, yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx:latest
+----
+
+==== Servicios
+Los servicios proporcionan un punto de acceso estable a un conjunto de pods. Permiten el descubrimiento y balanceo de carga entre pods, manteniendo la conectividad aunque los pods se reinicien o escalen.
+
+[source, yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+----
+
+==== Despliegues (Deployments)
+Los despliegues gestionan el ciclo de vida de las aplicaciones mediante declaraciones del estado deseado. Permiten actualizaciones continuas (rolling updates), reversiones y escalado automático.
+
+[source, yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16
+----
+
+==== Namespaces
+Los namespaces segmentan recursos en clústeres virtuales independientes. Permiten aislar entornos (dev/prod), gestionar cuotas de recursos y controlar accesos mediante RBAC.
+
+[source, bash]
+----
+# Crear namespace
+kubectl create namespace desarrollo
+
+# Contexto para namespace específico
+kubectl config set-context --current --namespace=desarrollo
+----
+
+=== Actualizaciones continuas, rollback y enrutamiento en Kubernetes
+
+==== Rollback
+
+**Comandos prácticos para revertir versiones:**
+
+[source, bash]
+----
+# Ver historial de revisiones
+kubectl rollout history deployment/mi-app
+
+# Revertir a revisión anterior
+kubectl rollout undo deployment/mi-app
+
+# Revertir a revisión específica
+kubectl rollout undo deployment/mi-app --to-revision=3
+
+# Simular reversión (dry-run)
+kubectl rollout undo deployment/mi-app --dry-run=server
+----
+
+==== Actualizaciones continuas (Rolling Updates)
+
+**Comandos para iniciar y monitorizar una actualización:**
+
+[source, bash]
+----
+# Iniciar actualización
+kubectl set image deployment/mi-app contenedor=imagen:v2
+
+# Monitorear progreso
+kubectl rollout status deployment/mi-app
+----
+
+==== Integración de capacidades
+
+**Flujo completo actualización + rollback:**
+
+[source, bash]
+----
+# Desplegar nueva versión
+kubectl apply -f deployment-v2.yaml
+
+# Verificar estado
+kubectl rollout status deployment/mi-app
+
+# Detectar error y revertir
+kubectl rollout undo deployment/mi-app
+
+# Verificar reversión
+kubectl get pods -l app=mi-app --show-labels
+----
+
+== Introducción a OpenShift
+
+=== Componentes y arquitectura de OpenShift
+
+==== Visión general de la arquitectura
+
+OpenShift es una plataforma de contenedores basada en Kubernetes que añade capas adicionales de gestión, seguridad y automatización para facilitar el despliegue y operación de aplicaciones en entornos empresariales. Su arquitectura está compuesta por varios niveles y componentes clave que trabajan juntos para ofrecer una solución integral.
+
+==== Niveles principales de la arquitectura
+
+- *Infraestructura:* OpenShift puede desplegarse sobre servidores físicos, virtuales o en la nube (privada o pública).
+- *Plano de control (Control Plane):* Gestiona el estado global del clúster y toma decisiones sobre la programación, escalado y supervisión de recursos.
+- *Nodos de trabajo (Worker Nodes):* Ejecutan los contenedores y aplicaciones del usuario, gestionados y supervisados por el plano de control.
+- *Capa de servicios y red:* Incluye servicios internos, balanceo de carga, almacenamiento persistente y componentes de red para la comunicación entre aplicaciones.
+
+==== Componentes principales de OpenShift
+
+===== Plano de control (nodo maestro)
+
+- *OpenShift API Server:* Gestiona las solicitudes y la configuración de recursos del clúster a través de una API RESTful.
+- *Controller Manager:* Supervisa el estado del clúster y asegura que los recursos coincidan con el estado deseado.
+- *Scheduler:* Decide en qué nodo se ejecutarán los pods, optimizando el uso de recursos.
+- *etcd:* Base de datos distribuida que almacena toda la configuración y estado del clúster de manera consistente.
+- *Operator Framework:* Automatiza la gestión y actualización de componentes y aplicaciones dentro del clúster.
+
+===== Nodos de trabajo (worker nodes)
+
+- *CRI-O:* Motor de ejecución de contenedores optimizado para Kubernetes y OpenShift.
+- *Kubelet:* Agente que ejecuta y supervisa los contenedores en el nodo.
+- *OpenShift SDN/Red interna:* Gestiona la conectividad y el aislamiento de red entre pods y servicios.
+- *OpenShift Router (Ingress Controller):* Expone aplicaciones al exterior y gestiona el enrutamiento del tráfico hacia los servicios internos.
+- *Registro de imágenes interno (Image Registry):* Almacena y gestiona imágenes de contenedores de forma local y segura.
+
+===== Componentes adicionales y servicios integrados
+
+- *OperatorHub:* Catálogo de operadores para instalar y gestionar aplicaciones y servicios de forma automatizada.
+- *OpenShift Pipelines (CI/CD):* Herramienta integrada para crear y gestionar flujos de integración y entrega continua.
+- *OpenShift Service Mesh:* Facilita la gestión, monitorización y seguridad del tráfico entre microservicios.
+- *OpenShift Serverless:* Permite ejecutar cargas de trabajo bajo demanda sin gestionar servidores.
+- *Consola web y CLI (`oc`):* Interfaz gráfica y de línea de comandos para la gestión y supervisión del clúster.
+
+==== Tabla resumen: Componentes clave de OpenShift
+
+|===
+| Componente                | Función principal                                                        
+| OpenShift API Server      | Interfaz de gestión y configuración del clúster                   
+| Controller Manager        | Mantiene el estado deseado de los recursos                        
+| Scheduler                 | Asigna pods a nodos óptimos                                       
+| etcd                      | Almacén de datos distribuido del clúster                          
+| Kubelet                   | Ejecuta y supervisa contenedores en nodos                         
+| CRI-O                     | Motor de ejecución de contenedores                                
+| OpenShift Router/Ingress  | Enrutamiento y balanceo de tráfico externo                     
+| Image Registry            | Almacenamiento interno de imágenes                             
+| OperatorHub               | Catálogo de operadores y automatización                              
+| Service Mesh, Pipelines   | Gestión de microservicios y CI/CD                                 
+|===
+
+==== Resumen
+
+La arquitectura de OpenShift está diseñada para ofrecer alta disponibilidad, escalabilidad y seguridad, integrando componentes propios y de Kubernetes, junto a servicios empresariales como CI/CD, gestión de imágenes y automatización avanzada. Esta estructura permite a las organizaciones desplegar y gestionar aplicaciones modernas de forma eficiente y segura en cualquier entorno.
+
+=== Diferencias entre OpenShift y Kubernetes
+
+==== Visión general
+
+OpenShift y Kubernetes son plataformas para la orquestación y gestión de contenedores, pero difieren en su enfoque, facilidad de uso, seguridad y servicios integrados. OpenShift es una distribución empresarial de Kubernetes desarrollada por Red Hat, que añade herramientas, seguridad y soporte para simplificar la experiencia de despliegue y operación en entornos empresariales.
+
+==== Diferencias clave
+
+- *Enfoque y experiencia de usuario:*
+- Kubernetes es un sistema open source modular, flexible y altamente configurable, pero requiere que el usuario monte, configure y mantenga todos los componentes manualmente.
+- OpenShift ofrece una plataforma lista para usar, con muchas funciones preconfiguradas, interfaz web avanzada y herramientas CLI propias, lo que reduce la curva de aprendizaje y la complejidad de la gestión.
+
+- *Seguridad:*
+- OpenShift incluye políticas de seguridad avanzadas y predefinidas, como restricciones de contexto de seguridad (SCC), RBAC integrado y escaneo de imágenes, facilitando el cumplimiento de normativas y la protección desde el inicio.
+- Kubernetes también ofrece herramientas de seguridad robustas, pero estas deben configurarse y mantenerse manualmente, lo que puede aumentar la complejidad y el riesgo de errores.
+
+- *Automatización y CI/CD:*
+- OpenShift integra de serie pipelines CI/CD, soporte GitOps y herramientas de automatización, permitiendo flujos de trabajo DevOps más ágiles y productivos.
+- Kubernetes requiere la integración manual de herramientas externas para lograr automatización y CI/CD.
+
+- *Soporte y mantenimiento:*
+- OpenShift incluye soporte empresarial, actualizaciones automáticas y mantenimiento gestionado por Red Hat, lo que reduce la carga operativa y el riesgo de errores críticos.
+- Kubernetes depende del usuario o de proveedores externos para el soporte y las actualizaciones, lo que puede requerir equipos técnicos más especializados.
+
+- *Interfaz y usabilidad:*
+- OpenShift proporciona una consola web intuitiva y potente, adecuada tanto para desarrolladores como para administradores, facilitando la gestión visual de recursos, despliegues y monitorización.
+- Kubernetes se gestiona principalmente mediante la CLI (`kubectl`) y archivos de configuración, con un panel web básico que suele estar deshabilitado por motivos de seguridad.
+
+- *Costos:*
+- Kubernetes es gratuito y open source, pero los costes de infraestructura, soporte y personalización recaen en el usuario.
+- OpenShift es una solución comercial con coste de suscripción, que incluye soporte, mantenimiento y características empresariales avanzadas.
+
+==== Tabla comparativa
+
+|===
+| Característica         | OpenShift                                   | Kubernetes                                
+| Seguridad             | Avanzada, preconfigurada                    | Manual, configurable                      
+| Experiencia de usuario| Consola web y CLI propia                    | CLI (`kubectl`), panel básico             
+| Automatización        | Integrada (CI/CD, GitOps)                   | Externa, requiere integración             
+| Soporte               | Empresarial, gestionado por Red Hat         | Autogestionado o por terceros             
+| Coste                 | Comercial (licencia)                        | Gratuito (open source)                    
+| Flexibilidad          | Menor, más opinada y cerrada                | Máxima, modular y personalizable          
+|===
+
+==== Resumen
+
+OpenShift es ideal para empresas que buscan una plataforma integral, segura y fácil de gestionar, con soporte profesional y menor complejidad operativa. Kubernetes es la opción preferida para equipos técnicos avanzados que desean máxima flexibilidad y control sobre la infraestructura, aunque a costa de una mayor complejidad y responsabilidad en la configuración y el mantenimiento.
+
+=== Versiones y modalidades de OpenShift (Online, Enterprise, Minishift)
+
+==== Versiones de OpenShift
+
+OpenShift sigue un esquema de versionado semántico compuesto por versión principal, secundaria y de revisión, con actualizaciones frecuentes para mejorar funcionalidades, seguridad y soporte. Las versiones recientes incluyen la 4.17 (junio de 2025), 4.16 (junio de 2024) y 4.15 (febrero de 2024), con soporte y actualizaciones programadas según el ciclo de vida publicado por Red Hat.
+
+|===
+| Versión      | Lanzamiento       | Fin de soporte estimado      
+| 4.17         | Octubre 2024      | 14 de febrero de 2026     
+| 4.16         | Junio 2024        | 2 de noviembre de 2025    
+| 4.15         | Febrero 2024      | 27 de junio de 2025       
+|===
+
+==== Modalidades de OpenShift
+
+OpenShift se ofrece en varias modalidades adaptadas a diferentes necesidades empresariales y de desarrollo:
+
+===== OpenShift Container Platform (Enterprise)
+
+- Instalación autogestionada en infraestructuras propias, nubes públicas o privadas.
+- Incluye todas las capacidades empresariales: alta disponibilidad, escalabilidad, seguridad avanzada, integración CI/CD, soporte multicloud y herramientas de automatización[11].
+- Soporte profesional de Red Hat y actualizaciones automáticas[11].
+- Permite la gestión de cargas de trabajo de contenedores y, en versiones recientes, también de máquinas virtuales (OpenShift Virtualization Engine)[12].
+
+===== OpenShift Online
+
+- Modalidad completamente gestionada por Red Hat, accesible como servicio en la nube.
+- Ideal para desarrolladores y equipos que desean evitar la gestión de infraestructura.
+- Proporciona acceso rápido a entornos de desarrollo y despliegue de aplicaciones, escalado automático y facturación por uso.
+- Permite experimentar con las últimas versiones de OpenShift sin necesidad de instalaciones complejas.
+
+===== OpenShift Dedicated
+
+- Servicio gestionado de OpenShift alojado en la nube (AWS, Google Cloud, Azure), pero dedicado a una sola organización.
+- Incluye soporte empresarial, seguridad avanzada y gestión completa por parte de Red Hat.
+- Apto para empresas que requieren un entorno aislado y gestionado con garantías de SLA.
+
+===== CRC (CodeReady Containers)
+- Versión ligera de OpenShift para desarrolladores, que permite ejecutar un clúster de OpenShift de un solo nodo en una máquina local.
+- Ideal para pruebas, desarrollo y formación, con recursos limitados (1 nodo, 10 GB RAM).
+- Permite experimentar con OpenShift sin necesidad de infraestructura compleja, pero no es adecuado para producción.
+
+==== Tabla comparativa de modalidades
+
+|===
+| Modalidad                   | Gestión        | Uso principal            | Escalabilidad       | Soporte empresarial | Entorno recomendado        
+| Container Platform (Enterprise)| Autogestionada| Producción empresarial   | Alta                | Sí                 | Empresas, nube híbrida    
+| Online                      | Gestionada     | Desarrollo y pruebas     | Alta                | Limitado           | Desarrolladores, SaaS     
+| Dedicated                   | Gestionada     | Producción empresarial   | Alta                | Sí                 | Empresas, nube pública    
+| CRC                   | Local          | Desarrollo y formación   | Limitada (1 nodo)   | No                 | Formación, prototipos     
+|===
+
+==== Resumen
+
+OpenShift ofrece versiones y modalidades adaptadas tanto a empresas como a desarrolladores individuales, abarcando desde soluciones autogestionadas y de misión crítica hasta entornos de desarrollo local y servicios completamente gestionados en la nube. La elección depende del nivel de control, soporte y escalabilidad requerido por cada organización o proyecto.
+
+== Instalación local de CRC (CodeReady Containers) para OpenShift
+
+=== Requisitos del sistema
+**Mínimos obligatorios**:
+- 4 núcleos de CPU
+- 9 GB de RAM (16 GB recomendados)
+- 35 GB de espacio en disco
+- Soporte de virtualización (KVM/libvirt)
+- Linux/macOS/Windows 10+
+
+=== Pasos de instalación
+
+**1. Descarga y preparación**:
+[source, bash]
+----
+# Descargar CRC desde portal Red Hat (requiere cuenta)
+wget https://mirror.openshift.com/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
+
+# Extraer archivos
+tar -xvf crc-linux-amd64.tar.xz
+
+# Mover binario a PATH
+sudo mv crc-linux-*/crc /usr/local/bin/
+chmod +x /usr/local/bin/crc
+----
+
+**2. Configuración inicial**:
+[source, bash]
+----
+# Preparar entorno (configura KVM/libvirt)
+crc setup
+
+# Ajustar recursos (ejemplo: 16GB RAM)
+crc config set memory 16384
+----
+
+**3. Iniciar cluster**:
+[source, bash]
+----
+# Iniciar con pull-secret (descargado de console.redhat.com)
+crc start -p ~/pull-secret.txt
+----
+> **Nota**: El proceso tarda ~10 minutos
+
+=== Verificación y acceso
+[source, bash]
+----
+# Comprobar estado
+crc status
+
+# Acceso como administrador
+oc login -u kubeadmin -p <contraseña-generada> https://api.crc.testing:6443
+
+# Acceso como desarrollador
+oc login -u developer -p developer https://api.crc.testing:6443
+
+# Abrir consola web
+crc console
+----
+
+=== Configuración avanzada
+**Operadores base recomendados**:
+[source, bash]
+----
+# Instalar operadores desde OperatorHub
+oc apply -f https://operatorhub.io/install/prometheus.yaml
+oc apply -f https://operatorhub.io/install/strimzi-kafka-operator.yaml
+----
+
+**Ajustes clave**:
+|===
+| Parámetro      | Comando                      | Valor típico 
+| CPUs           | `crc config set cpus`       | 4-8          
+| Disco          | `crc config set disk-size`  | 100GB        
+| Red            | `crc config set network-mode`| vsock        
+|===
+
+=== Solución de problemas comunes
+**Error de virtualización**:
+[source, bash]
+----
+sudo modprobe kvm
+sudo usermod -aG libvirt $USER
+newgrp libvirt
+----
+
+**Reinicio completo**:
+[source, bash]
+----
+crc stop
+crc delete
+crc cleanup
+crc start
+----
+
+=== Recursos adicionales
+1. [Documentación oficial CRC|https://crc.dev/docs/]
+2. [Guía de operadores|https://es.linkedin.com/pulse/gu%C3%ADa-para-configurar-openshift-crc-y-operadores-base-meza-kranc]
+3. [Troubleshooting avanzado|https://dev.to/khurammurad/how-to-set-up-openshift-local-crc-on-ubuntu-a-developers-guide-le2]
+
+
+=== Acceso y gestión desde la consola web y la línea de comandos (oc)
+
+==== Acceso y gestión desde la consola web
+
+La consola web de OpenShift es una interfaz gráfica accesible desde cualquier navegador web. Permite a desarrolladores y administradores visualizar, gestionar y supervisar los recursos y proyectos del clúster. La consola web se ejecuta como pods en los nodos de control y está gestionada por el operador de consola (`console-operator`). 
+
+.Existen dos perspectivas principales:
+- **Administrator**: Permite gestionar el clúster, recursos, usuarios, operadores, almacenamiento, redes, monitoreo, actualizaciones y más.
+- **Developer**: Orientada al desarrollo y despliegue de aplicaciones, con herramientas para la gestión de proyectos, componentes y recursos asociados.
+
+El acceso se realiza mediante la URL proporcionada tras la instalación del clúster o consultando con el comando `oc whoami --show-console`. El inicio de sesión se realiza con credenciales de usuario, como `kubeadmin` para acceso total o usuarios con permisos limitados. Dependiendo del rol, se mostrarán diferentes opciones y permisos en la interfaz. Desde la consola web se pueden crear, editar y eliminar proyectos, gestionar recursos, revisar el estado del clúster y acceder a tutoriales guiados (quick starts) para facilitar la adopción de la plataforma.
+
+==== Acceso y gestión desde la línea de comandos (oc)
+
+La herramienta de línea de comandos `oc` permite gestionar todos los recursos de OpenShift desde un terminal. Es posible instalarla descargando el binario desde la página oficial o desde la propia consola web. Una vez instalada, el acceso al clúster se realiza con el comando:
+
+----
+oc login https://api.<cluster>.openshift.com --token=<token>
+----
+
+El token de acceso puede obtenerse desde la consola web, opción "Copy Login Command", o bien autenticarse con usuario y contraseña:
+
+----
+oc login -u <usuario> -p <contraseña> https://api.<cluster>.openshift.com
+----
+
+Al iniciar sesión, se crea o actualiza el archivo de configuración en `~/.kube/config` con los datos de acceso. Desde la CLI se pueden realizar todas las operaciones administrativas y de desarrollo, como crear proyectos (`oc new-project`), desplegar aplicaciones, consultar el estado del clúster (`oc status`), obtener información de recursos (`oc get`, `oc describe`), gestionar permisos y mucho más. Además, la CLI soporta autocompletado en Bash y Zsh para facilitar el uso de los comandos.
+
+==== Resumen
+
+- **Consola web**: Interfaz gráfica, acceso según rol (admin/desarrollador), gestión visual de recursos, proyectos y clúster.
+- **CLI (oc)**: Gestión completa desde terminal, autenticación por token o usuario/contraseña, operaciones avanzadas y automatización de tareas.
+
+Ambas opciones son complementarias y permiten una administración flexible y eficiente de OpenShift.
+
+== Recursos y Operaciones en OpenShift
+
+OpenShift es una plataforma de gestión y orquestación de contenedores basada en Kubernetes, diseñada para facilitar el ciclo de vida completo de las aplicaciones, desde el desarrollo hasta la operación y el monitoreo.
+
+=== Recursos principales en OpenShift
+
+- **Pods:** Unidades mínimas de ejecución que agrupan uno o varios contenedores con recursos compartidos como red y almacenamiento persistente.
+- **Servicios:** Proveen acceso estable y consistente a un conjunto de pods, gestionando el balanceo de carga interno y la exposición de aplicaciones.
+- **Controladores de replicación y ReplicaSets:** Permiten el escalado horizontal y la alta disponibilidad de las aplicaciones, asegurando el número deseado de réplicas de pods.
+- **Deployments y DeploymentConfigs:** Gestionan actualizaciones y el ciclo de vida de los pods de manera declarativa.
+- **PersistentVolume (PV) y PersistentVolumeClaim (PVC):** Abstracción de almacenamiento persistente en red, permitiendo que los datos sobrevivan a reinicios y actualizaciones de pods.
+- **Projects:** Agrupaciones lógicas de recursos (similar a los namespaces de Kubernetes) que aíslan y organizan los recursos y el acceso de los usuarios.
+- **Routes:** Exponen servicios internos al exterior, permitiendo el acceso a aplicaciones desde Internet mediante nombres de dominio y balanceo de carga.
+- **MachineSets:** Agrupan nodos de trabajo para facilitar el autoscaling y la gestión de recursos de cómputo.
+- **Operators:** Extienden la funcionalidad de Kubernetes/OpenShift, automatizando la gestión de aplicaciones y servicios complejos mediante APIs y CLI.
+
+=== Operaciones clave en OpenShift
+
+- **Orquestación y gestión de ciclo de vida:** Automatiza la creación, despliegue, escalado y actualización de aplicaciones y servicios.
+- **Gestión de recursos:**
+  - **ResourceQuotas:** Limita el uso de recursos (CPU, memoria, número de pods, almacenamiento) a nivel de proyecto para evitar el consumo excesivo y garantizar la equidad entre equipos.
+  - **LimitRanges:** Define límites mínimos y máximos de recursos por pod o contenedor dentro de un proyecto.
+  - **PriorityClasses:** Asigna prioridades a los pods para influir en la programación y la preempción en caso de competencia por recursos.
+- **Escalado automático:** Ajuste dinámico de la cantidad de pods según la carga de trabajo, usando controladores de replicación y escaladores automáticos.
+- **Seguridad y control de acceso:** Políticas de acceso, aislamiento de red, gestión de roles y autenticación para proteger los recursos y las aplicaciones.
+- **Supervisión y observabilidad:** Herramientas integradas para monitoreo en tiempo real, análisis de logs y métricas de rendimiento (OpenShift Observability).
+- **Operaciones automatizadas:** Instalación, actualizaciones y gestión del clúster y aplicaciones mediante operadores y flujos automatizados.
+
+=== Capacidades adicionales
+
+- **CI/CD integrado:** OpenShift incluye herramientas como OpenShift Pipelines y OpenShift GitOps para automatizar la integración y entrega continua de aplicaciones.
+- **Autoservicio para desarrolladores:** Los equipos pueden crear y gestionar sus propios entornos y pipelines sin intervención directa del equipo de operaciones, acelerando el desarrollo y el despliegue.
+- **Gestión centralizada:** Consola de administración unificada para controlar clústeres, servicios, costos y suscripciones.
+
+=== Resumen
+
+OpenShift proporciona un entorno robusto para el desarrollo, despliegue y operación de aplicaciones en contenedores, combinando recursos avanzados de Kubernetes con herramientas propias para gestión, seguridad, automatización y observabilidad, facilitando tanto las tareas de los desarrolladores como las de los equipos de operaciones.
+
+
+== Despliegue de Aplicaciones en OpenShift
+
+=== Métodos principales de despliegue
+OpenShift ofrece múltiples enfoques para desplegar aplicaciones:
+
+**1. Desde repositorio Git (Source-to-Image - S2I)**:
+- Construcción automática de imágenes desde código fuente
+- Ejemplo con CLI:
+[source, bash]
+----
+oc new-app --name=mi-app https://github.com/usuario/repo.git
+----
+
+**2. Desde imagen de contenedor existente**:
+- Uso de imágenes de registros públicos/privados
+- Ejemplo:
+[source, bash]
+----
+oc new-app --name=mi-app --docker-image=registry.redhat.io/ubi8/nginx-120
+----
+
+**3. Desde Dockerfile**:
+- Construcción personalizada usando Dockerfile
+- Ejemplo:
+[source, bash]
+----
+oc new-app --name=mi-app --dockerfile=$'FROM ubi8/nodejs-16\nCOPY . .\nCMD ["npm", "start"]'
+----
+
+**4. Desde definición YAML/JSON**:
+- Despliegue declarativo usando manifiestos
+- Ejemplo:
+[source, bash]
+----
+oc apply -f deployment.yml
+----
+
+=== Flujo completo de despliegue
+**Paso 1: Preparar entorno**
+[source, bash]
+----
+# Iniciar sesión
+oc login -u <usuario> -p <contraseña> <api_server>
+
+# Crear proyecto
+oc new-project mi-proyecto
+----
+
+**Paso 2: Construir y desplegar aplicación**
+[source, bash]
+----
+# Opción 1: Desde Git (S2I)
+oc new-app --name=nodejs-app https://github.com/galvarado/node-app-openshift-example.git
+
+# Opción 2: Subir imagen personalizada
+podman build -t nodejs-demo .
+podman tag nodejs-demo <registry_route>/mi-proyecto/nodejs-demo
+podman push <registry_route>/mi-proyecto/nodejs-demo
+oc new-app --name=nodejs-app --image=<registry_route>/mi-proyecto/nodejs-demo
+----
+
+**Paso 3: Exponer aplicación**
+[source, bash]
+----
+# Crear servicio
+oc expose deployment/nodejs-app --port=8080
+
+# Crear ruta externa
+oc expose svc/nodejs-app --name=mi-ruta
+----
+
+**Paso 4: Verificar despliegue**
+[source, bash]
+----
+# Listar recursos
+oc get pods,svc,routes
+
+# Ver logs
+oc logs -f deployment/nodejs-app
+
+# Probar aplicación
+curl http://$(oc get route mi-ruta -o jsonpath='{.spec.host}')
+----
+
+=== Recursos avanzados
+**DeploymentConfig vs Deployment**:
+| Característica          | DeploymentConfig           | Deployment (Kubernetes)     |
+|-------------------------|----------------------------|------------------------------|
+| Estrategias despliegue  | Personalizables           | Estándar                     |
+| Triggers                | Configurables             | Limitados                    |
+| Rollback                | `oc rollback` nativo      | Requiere revisiones manuales |
+| Historial               | Mantiene revisiones       | Limitado                     |
+
+**Despliegues Serverless**:
+- Escalado automático a cero
+- Configuración básica:
+[source, yaml]
+----
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: serverless-app
+spec:
+  template:
+    spec:
+      containers:
+        - image: docker.io/library/nodejs-demo
+----
+
+**Gestión de actualizaciones**:
+- Rolling updates:
+[source, bash]
+----
+oc set triggers dc/nodejs-app --from-config --auto
+----
+- Rollback automático:
+[source, bash]
+----
+oc rollout undo dc/nodejs-app
+----
+
+=== Mejores prácticas
+.**Health Checks**:
+[source, yaml]
+----
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 15
+readinessProbe:
+  tcpSocket:
+    port: 8080
+  initialDelaySeconds: 5
+----
+
+.**Configuración mediante ConfigMaps**:
+[source, bash]
+----
+oc create configmap app-config --from-file=config.properties
+oc set env deployment/nodejs-app --from=configmap/app-config
+----
+
+.**Gestión de secretos**:
+[source, bash]
+----
+oc create secret generic db-creds --from-literal=username=admin --from-literal=password=S3cr3t
+oc set env deployment/nodejs-app --from=secret/db-creds
+----
+
+.**Autoscaling**:
+[source, bash]
+----
+oc autoscale deployment/nodejs-app --min=2 --max=10 --cpu-percent=80
+----
+
+=== Solución de problemas comunes
+**Error: Cannot create container**:
+- Verificar SecurityContextConstraints (SCC):
+[source, bash]
+----
+oc adm policy add-scc-to-user anyuid -z default
+----
+
+**Imagen no accesible**:
+- Configurar pull secret:
+[source, bash]
+----
+oc create secret docker-registry redhat-registry \
+  --docker-server=registry.redhat.io \
+  --docker-username=<user> \
+  --docker-password=<token>
+oc secrets link default redhat-registry --for=pull
+----
+
+**Problemas de red**:
+- Diagnosticar servicios:
+[source, bash]
+----
+oc get endpoints
+oc rsh <pod> curl -v http://<servicio>:<puerto>
+----
+
+
+=== Uso de Dockerfile y Source-to-Image (S2I)
+
+==== Dockerfile en OpenShift
+
+OpenShift permite construir imágenes de contenedor utilizando Dockerfile, lo que proporciona flexibilidad y control sobre el proceso de construcción. Aunque OpenShift se basa en Kubernetes, la construcción de imágenes con Dockerfile sigue siendo una práctica común y recomendada para aplicaciones que requieren personalización específica o pasos de construcción complejos.
+
+.OpenShift permite construir imágenes a partir de un Dockerfile de varias formas:
+* Puedes almacenar el Dockerfile en un repositorio Git junto con el código fuente de la aplicación, lo que facilita el control de versiones y la gestión del ciclo de vida del contenedor.
+* OpenShift utiliza un recurso llamado `BuildConfig` para definir cómo se construirá la imagen. En el `BuildConfig`, puedes especificar la ruta al Dockerfile o incluso incluirlo de forma "inline" dentro del propio manifiesto YAML.
+
+.Ejemplo de `BuildConfig` usando un Dockerfile desde un repositorio Git:
+[source,yaml]
+----
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: mi-aplicacion
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/usuario/mi-repo
+    contextDir: app
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: mi-aplicacion:latest
+----
+
+* También es posible construir la imagen a partir de un Dockerfile local usando `oc new-build --binary`, subir los archivos y lanzar la construcción con `oc start-build`.
+
+==== Source-to-Image (S2I)
+
+Source-to-Image (S2I) es una herramienta y marco de trabajo que permite construir imágenes de contenedor directamente a partir del código fuente de la aplicación, sin necesidad de escribir un Dockerfile.
+
+* S2I utiliza imágenes "builder" predefinidas que contienen el entorno de ejecución y las herramientas necesarias para compilar y ejecutar la aplicación.
+* El proceso básico de S2I es:
+  - Inicia un contenedor a partir de la imagen builder.
+  - Descarga el código fuente de la aplicación (por ejemplo, desde un repositorio Git).
+  - Inyecta el código fuente y ejecuta scripts de ensamblado (assemble) para instalar dependencias y preparar la aplicación.
+  - Crea una nueva imagen lista para ejecutar la aplicación.
+
+* En OpenShift, puedes crear una aplicación S2I desde la consola web ("From Git") o usando la CLI con `oc new-app` especificando el builder y el repositorio de código fuente.
+
+.Para listar las imágenes builder (imagestream) disponibles en OpenShift, puedes usar:
+[source,bash]
+----
+oc get is -n openshift
+----
+
+==== Resumen
+
+* Usa Dockerfile cuando necesitas control total sobre la construcción de la imagen o cuando tu stack no está soportado por imágenes builder S2I.
+* Usa S2I para acelerar el desarrollo y despliegue de aplicaciones estándar, aprovechando la automatización y buenas prácticas integradas en las imágenes builder de OpenShift.
+
+
+== Despliegue automatizado y pipelines CI/CD en OpenShift
+
+=== OpenShift Pipelines (Tekton)
+**Arquitectura basada en Kubernetes**:
+- `Tasks`: Pasos reutilizables (build, test, deploy)
+- `Pipelines`: Orquestación de múltiples `Tasks`
+- `PipelineRuns`: Ejecuciones concretas de pipelines
+
+**Ejemplo de pipeline completo**:
+[source,yaml]
+----
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: vote-app-pipeline
+spec:
+  tasks:
+    - name: build-ui
+      taskRef:
+        name: s2i-nodejs
+      params:
+        - name: IMAGE
+          value: quay.io/myproject/vote-ui:latest
+    - name: deploy-prod
+      runAfter: [test]
+      taskRef:
+        name: openshift-client
+      params:
+        - name: SCRIPT
+          value: |
+            oc set triggers deployment/vote-ui --auto
+----
+
+=== Integración con GitOps (Argo CD)
+**Patrón de implementación**:
+1. Cambios en Git desencadenan pipelines
+2. Pipeline actualiza manifiestos en repositorio GitOps
+3. Argo CD sincroniza estado con clúster
+
+**Configuración básica**:
+[source,yaml]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vote-app
+spec:
+  destination:
+    namespace: vote-prod
+    server: https://openshift:6443
+  source:
+    path: environments/prod
+    repoURL: https://github.com/myteam/gitops-repo
+    targetRevision: main
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+----
+
+=== Automatización con Ansible
+**Flujo de automatización**:
+1. Conexión a API de OpenShift
+2. Ejecución de playbooks para gestión de recursos
+3. Despliegue declarativo con colecciones certificadas
+
+**Playbook de ejemplo**:
+[source,yaml]
+----
+- name: Deploy Redis application
+  hosts: localhost
+  tasks:
+    - name: Create namespace
+      k8s:
+        api_version: v1
+        kind: Namespace
+        name: guestbook
+    - name: Deploy Redis leader
+      k8s:
+        definition: "{{ lookup('file', 'redis-leader.yaml') }}"
+----
+
+=== Plantillas de pipelines comunes
+**Pipeline multi-etapa**:
+[source, graph LR]
+----
+A[CI Build] --> B(Unit Tests)
+B --> C{SonarQube Scan}
+C -->|Pass| D[Build Image]
+D --> E(Deploy to DEV)
+E --> F[Integration Tests]
+F --> G{Promote to QA?}
+G -->|Yes| H[Deploy to QA]
+----
+
+
+**Pipeline serverless**:
+[source,yaml]
+----
+spec:
+  tasks:
+    - name: build
+      taskRef:
+        name: buildah
+    - name: deploy-serverless
+      taskRef:
+        name: kn
+      params:
+        - name: ARGS
+          value: ["service", "create", "vote-service", "--image=$(outputs.resources.image.url)"]
+----
+
+=== Mejores prácticas
+1. **Gestión de secretos**:
+[source,bash]
+----
+oc create secret generic git-creds --type=kubernetes.io/basic-auth --from-literal=username=<user> --from-literal=password=<token>
+----
+
+.**Escalado automático de recursos**:
+[source,yaml]
+----
+resources:
+  - name: build-image
+    type: image
+  - name: source-repo
+    type: git
+    url: https://github.com/myorg/myrepo
+    revision: main
+    secretRef:
+      name: git-creds
+----
+
+.**Monitorización de pipelines**:
+[source,bash]
+----
+tkn pipeline logs vote-app-pipeline -f
+tkn pipeline describe vote-app-pipeline
+----
+
+=== Solución de problemas
+**Problema común**: Fallos en montaje de volúmenes  
+**Solución**:
+[source,yaml]
+----
+workspaces:
+  - name: source-workspace
+    persistentVolumeClaim:
+      claimName: mypvc
+----
+
+**Problema común**: Permisos insuficientes  
+**Solución**:
+[source,bash]
+----
+oc adm policy add-cluster-role-to-user edit system:serviceaccount:pipeline:tekton-pipelines
+----
+
+
+== Componentes fundamentales de almacenamiento en OpenShift
+
+=== Tipos de almacenamiento
+
+**Almacenamiento efímero**
+- *emptyDir*: Volumen temporal para compartir datos entre contenedores dentro de un mismo Pod. Los datos se eliminan cuando el Pod finaliza.
+- *hostPath*: Monta un directorio del nodo trabajador en el Pod. Útil para pruebas, pero no recomendado para producción.
+
+**Almacenamiento persistente**
+- *Volúmenes Persistentes (PV)*: Recurso físico de almacenamiento en el clúster, gestionado por el administrador.
+- *Persistent Volume Claims (PVC)*: Solicitud por parte de un usuario o aplicación para obtener un volumen persistente. El sistema asigna un PV disponible que cumpla los requisitos.
+- *StorageClass*: Define el tipo de almacenamiento y el aprovisionador que lo gestiona (por ejemplo, SSD, Ceph, NFS, etc.).
+
+=== OpenShift Data Foundation (ODF)
+
+- **Solución unificada** para gestionar almacenamiento persistente en bloques, archivos y objetos, tanto en la nube como on-premise.
+- **Basada en Ceph**: Ofrece alta disponibilidad, escalabilidad y tolerancia a fallos.
+- **Aprovisionamiento dinámico**: Permite crear volúmenes bajo demanda mediante StorageClass y PVC.
+
+=== Interfaz de almacenamiento de contenedores (CSI)
+
+- **Plugins CSI**: Permiten a OpenShift consumir almacenamiento de múltiples proveedores (AWS, Azure, Ceph, Oracle, etc.).
+- **Traducción de solicitudes**: Convierte las PVC en llamadas específicas al backend de almacenamiento.
+
+=== Ejemplo de configuración
+
+**Definición de StorageClass**:
+[source,yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+----
+
+En este ejemplo, se define una clase de almacenamiento llamada `standard` que utiliza EBS de AWS con tipo de volumen `gp2`, lo que permite aprovisionar volúmenes persistentes de forma dinámica.
+
+**Solicitud de volumen persistente (PVC)**:
+[source,yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mi-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+----
+
+En este ejemplo, se crea un PVC llamado `mi-pvc` que solicita 10 GiB de almacenamiento con acceso de lectura/escritura exclusivo para un nodo, utilizando la clase de almacenamiento `standard`.
+
+**Montaje en un Pod**:
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mi-pod
+spec:
+  containers:
+    - name: mi-contenedor
+      image: nginx
+      volumeMounts:
+        - mountPath: "/var/www/html"
+          name: almacenamiento
+  volumes:
+    - name: almacenamiento
+      persistentVolumeClaim:
+        claimName: mi-pvc
+----
+
+=== Resumen de conceptos clave
+
+| Componente             | Función principal                                                                 |
+|------------------------|-----------------------------------------------------------------------------------|
+| Volumen (Volume)       | Montaje de almacenamiento en un Pod, puede ser efímero o persistente        |
+| PersistentVolume (PV)  | Recurso físico de almacenamiento persistente en el clúster               |
+| PersistentVolumeClaim  | Solicitud de almacenamiento persistente por parte de una aplicación      |
+| StorageClass           | Define el tipo y aprovisionador de almacenamiento                           |
+| CSI                    | Plugin para integración con proveedores externos de almacenamiento           |
+| OpenShift Data Foundation | Solución de almacenamiento definido por software para OpenShift           |
+
+
+=== Ejemplo completo: Aplicación WordPress en OpenShift
+
+==== Arquitectura del despliegue
+La aplicación WordPress se desplegará utilizando un Pod que ejecuta el contenedor de WordPress, un servicio para exponer la aplicación y un volumen persistente para almacenar los datos de la base de datos y los archivos de WordPress. 
+
+.La arquitectura incluye:
+- **Pod**: Contenedor de WordPress y PHP.
+- **Servicio**: Exposición del Pod a través de una IP estable.
+- **Volumen Persistente**: Almacenamiento de datos de WordPress y base de datos.
+- **Base de Datos**: Utilizando MySQL como backend.
+
+
+=== Paso 1: Crear proyecto y secretos
+[source, bash]
+----
+# Crear proyecto
+oc new-project wordpress-demo
+
+# Generar secretos para MySQL
+oc create secret generic mysql-secrets \
+  --from-literal=mysql-root-password=SuperSecret \
+  --from-literal=mysql-database=wordpress \
+  --from-literal=mysql-user=wpuser \
+  --from-literal=mysql-password=Wp@ssw0rd
+----
+
+==== Paso 2: Desplegar MySQL
+[source, yaml]
+----
+# mysql-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: registry.redhat.io/rhscl/mysql-80-rhel7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-root-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-database
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-password
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-pv-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-pv-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+
+---
+# mysql-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+----
+
+==== Paso 3: Desplegar WordPress
+[source, yaml]
+----
+# wordpress-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      containers:
+      - name: wordpress
+        image: registry.redhat.io/rhscl/wordpress-56-rhel7
+        env:
+        - name: WORDPRESS_DB_HOST
+          value: mysql
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-user
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-password
+        - name: WORDPRESS_DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secrets
+              key: mysql-database
+        ports:
+        - containerPort: 8080
+          name: http-port
+        - containerPort: 8443
+          name: https-port
+
+---
+# wordpress-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http-port
+  - name: https
+    port: 443
+    targetPort: https-port
+  selector:
+    app: wordpress
+----
+
+==== Paso 4: Exponer la aplicación
+[source, bash]
+----
+# Crear ruta HTTPS
+oc create route edge wordpress-route \
+  --service=wordpress \
+  --port=https \
+  --insecure-policy=Redirect
+----
+
+=== Paso 5: Configuración avanzada
+**Persistent Volume Claims**:
+[source, yaml]
+----
+# mysql-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+# wordpress-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+----
+
+**Configuración de salud**:
+[source, yaml]
+----
+livenessProbe:
+  httpGet:
+    path: /wp-login.php
+    port: http-port
+  initialDelaySeconds: 120
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /wp-login.php
+    port: http-port
+  initialDelaySeconds: 30
+  periodSeconds: 5
+----
+
+=== Verificación final
+[source, bash]
+----
+# Comprobar recursos
+oc get pods,svc,route,pvc
+
+# Obtener URL de acceso
+echo "URL de WordPress: https://$(oc get route wordpress-route -o jsonpath='{.spec.host}')"
+
+# Ver logs
+oc logs -f deployment/wordpress
+----
+
+=== Diagrama de flujo completo
+[source, bash]
+----
+graph TD
+    A[oc new-project] --> B[oc create secret]
+    B --> C[oc apply -f mysql-pvc.yaml]
+    C --> D[oc apply -f mysql-deployment.yaml]
+    D --> E[oc apply -f mysql-service.yaml]
+    E --> F[oc apply -f wordpress-pvc.yaml]
+    F --> G[oc apply -f wordpress-deployment.yaml]
+    G --> H[oc apply -f wordpress-service.yaml]
+    H --> I[oc create route]
+    I --> J[Acceso vía navegador]
+----
+
+== Routes y Exposición de Servicios en OpenShift
+
+=== Conceptos fundamentales
+Las **rutas (Routes)** son el mecanismo principal en OpenShift para exponer servicios externamente mediante nombres de host personalizados. Funcionan como una capa de encaminamiento HTTP/HTTPS que se integra con el controlador Ingress de OpenShift. 
+
+
+=== Tipos de rutas y terminación TLS
+|===
+| Tipo              | Caso de uso                                                                 | Ejemplo CLI                     
+| **Simple**        | Tráfico HTTP no cifrado                                                 | `oc expose svc/mi-servicio`    
+| **Edge**          | Terminación TLS en el router (tráfico no cifrado al pod)             | `oc create route edge ...`      
+| **Passthrough**   | TLS ininterrumpido hasta el pod (útil para HTTP/2)                      | `oc create route passthrough...`
+| **Re-encrypt**    | Terminación TLS en router + nueva encriptación al pod                    | `oc create route reencrypt...`  
+|===
+
+=== Creación de rutas mediante CLI
+**Exposición básica**:
+[source, bash]
+----
+# Exponer servicio como ruta HTTP simple
+oc expose svc/mi-servicio
+
+# Crear ruta HTTPS con terminación edge
+oc create route edge mi-ruta-segura \
+  --service=mi-servicio \
+  --port=8080 \
+  --insecure-policy=Redirect
+----
+
+**Definición YAML avanzada**:
+[source, yaml]
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: ruta-ejemplo
+spec:
+  host: app.ejemplo.com
+  port:
+    targetPort: 8080
+  to:
+    kind: Service
+    name: mi-servicio
+  tls:
+    termination: edge
+    key: |-
+      -----BEGIN PRIVATE KEY-----
+      ...
+    certificate: |-
+      -----BEGIN CERTIFICATE-----
+      ...
+----
+
+=== Gestión de nombres de host
+- **Hostnames automáticos**: Formato `<servicio>-<proyecto>.<dominio-ingress>`
+- **Dominios personalizados**: Configuración en `spec.host` del recurso Route
+- **Wildcard support**: Rutas comodín para subdominios dinámicos
+
+=== Verificación y diagnóstico
+[source, bash]
+----
+# Listar rutas existentes
+oc get routes
+
+# Inspeccionar configuración
+oc describe route/mi-ruta
+
+# Probar acceso
+curl -v http://$(oc get route mi-ruta -o jsonpath='{.spec.host}')
+----
+
+=== Consideraciones clave
+1. **Seguridad**: 
+   - Uso obligatorio de `insecurePolicy: Redirect` para forzar HTTPS
+   - Rotación automática de certificados con OpenShift Service CA
+2. **Rendimiento**: 
+   - Balanceo de carga round-robin por defecto
+   - Soporte para sesiones persistentes con `spec.sessionAffinity`
+3. **Compatibilidad**:
+   - Integración con certificados wildcard de Let's Encrypt
+   - Soporte para WebSockets y HTTP/2
+
+> **Nota**: Las rutas son el equivalente avanzado de los Ingress de Kubernetes, ofreciendo funcionalidades adicionales específicas de OpenShift como terminación TLS integrada y seguridad mejorada. Para entornos complejos, se recomienda combinar rutas con operadores como OpenShift Ingress Controller para gestión avanzada de tráfico.
+
+=== Gestión de recursos: pods, servicios, rutas y proyectos.
+
+OpenShift organiza y gestiona los recursos de las aplicaciones en contenedores a través de pods, servicios, rutas y proyectos, permitiendo un control granular y seguro sobre el ciclo de vida de las aplicaciones.
+
+==== Pods
+Los pods son la unidad mínima de ejecución en OpenShift y Kubernetes. Cada pod puede contener uno o varios contenedores que comparten red y almacenamiento. El programador (`kube-scheduler`) decide en qué nodo desplegar cada pod según la capacidad, requisitos y políticas del clúster. El estado y configuración de los pods se gestiona a través del API server, que almacena la información en etcd.
+
+*Ejemplo de creación de pod:*
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mi-pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.21
+      ports:
+        - containerPort: 80
+----
+
+*Comandos útiles:*
+[source,bash]
+----
+oc get pods
+oc describe pod <nombre>
+oc logs <nombre>
+oc rsh <nombre>
+----
+
+==== Servicios
+Los servicios agrupan un conjunto de pods bajo una única dirección IP y nombre DNS, permitiendo el acceso estable a las aplicaciones incluso si los pods subyacentes cambian. Los servicios pueden ser de tipo `ClusterIP` (interno), `NodePort` (exposición por puerto del nodo), o `LoadBalancer` (balanceador externo). El API server gestiona la creación y actualización de servicios.
+
+*Ejemplo de creación de servicio:*
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: mi-servicio
+spec:
+  selector:
+    app: mi-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+----
+
+*Comandos útiles:*
+[source,bash]
+----
+oc get services
+oc describe service <nombre>
+----
+
+==== Rutas (Routes)
+Las rutas permiten exponer servicios HTTP/HTTPS al exterior, asignando un nombre de host accesible públicamente. OpenShift soporta varios tipos de rutas según la terminación TLS: simple (sin cifrado), edge (TLS termina en el router), passthrough (TLS de extremo a extremo), y reencrypt (TLS termina y se vuelve a cifrar en el router).
+
+*Ejemplo de creación de ruta:*
+[source,bash]
+----
+oc expose service/mi-servicio
+----
+
+*Ver rutas y host asignado:*
+[source,bash]
+----
+oc get routes
+oc describe route <nombre>
+----
+
+*Tipos de rutas y casos de uso:*
+|===
+| Tipo        | Caso de uso principal                                                       
+| Simple      | HTTP sin cifrado                                                            
+| Edge        | TLS termina en el router, tráfico interno sin cifrar                        
+| Passthrough | TLS extremo a extremo, el pod gestiona el cifrado                           
+| Reencrypt   | TLS termina y se vuelve a cifrar en el router, tráfico interno cifrado      
+|===
+
+==== Proyectos
+Un proyecto en OpenShift es un agrupamiento lógico de recursos (equivalente a un namespace de Kubernetes, pero con información adicional). Permite aislar aplicaciones, controlar el acceso y gestionar cuotas de recursos. Cada vez que se crea un proyecto, se crea un namespace asociado. Los usuarios pueden cambiar de proyecto, listar los existentes y gestionar su ciclo de vida.
+
+.Crear un nuevo proyecto
+[source,bash]
+----
+oc new-project mi-proyecto
+----
+
+.Listar proyectos disponibles
+[source,bash]
+----
+oc get projects
+----
+
+.Cambiar de proyecto
+[source,bash]
+----
+oc project mi-proyecto
+----
+
+.Ver detalles de un proyecto
+[source,bash]
+----
+oc describe project mi-proyecto
+----
+
+.Eliminar un proyecto
+[source,bash]
+----
+oc delete project mi-proyecto
+----
+
+.Crear un proyecto:
+[source,bash]
+----
+oc new-project ejemplo
+----
+.Desplegar una aplicación:
+[source,bash]
+----
+oc new-app nginx
+----
+.Exponer el servicio:
+[source,bash]
+----
+oc expose deployment/nginx
+----
+.Obtener la ruta pública:
+[source,bash]
+----
+oc get routes
+----
+
+Esto permite gestionar de forma estructurada y segura el ciclo de vida de las aplicaciones en OpenShift, integrando pods, servicios, rutas y proyectos en una arquitectura robusta y escalable.
+
+=== Tolerancia a fallos, autoescalado y balanceo de carga en OpenShift
+
+OpenShift proporciona mecanismos avanzados para garantizar la alta disponibilidad, escalabilidad y distribución eficiente del tráfico en aplicaciones cloud-native. A continuación se describen los tres pilares principales:
+
+==== Tolerancia a fallos
+
+* OpenShift utiliza ReplicaSets para mantener el número deseado de pods en ejecución. Si un pod falla, el sistema lo reemplaza automáticamente.
+* La arquitectura permite distribuir nodos entre distintos dominios de fallo (failure domains), de modo que la caída de un nodo o zona no afecta a la disponibilidad global.
+* Las herramientas de monitoreo y logs integradas facilitan la detección y recuperación ante fallos.
+
+==== Autoescalado
+
+* El Horizontal Pod Autoscaler (HPA) ajusta automáticamente el número de réplicas de pods según métricas como CPU o memoria.* 
+* La configuración típica incluye parámetros como minReplicas, maxReplicas y el porcentaje objetivo de uso de CPU.
+
+.En el siguiente ejemplo, se configura un HPA para una aplicación llamada "mi-app" que escala entre 2 y 10 réplicas, manteniendo un uso promedio de CPU del 80%:
+[source,yaml]
+----
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+name: ejemplo-hpa
+spec:
+scaleTargetRef:
+apiVersion: apps/v1
+kind: Deployment
+name: mi-app
+minReplicas: 2
+maxReplicas: 10
+metrics:
+- type: Resource
+resource:
+name: cpu
+target:
+type: Utilization
+averageUtilization: 80
+----
+
+El HPA reacciona en 1-2 minutos tras detectar la necesidad de escalado.
+
+==== Balanceo de carga
+. OpenShift implementa varios mecanismos para distribuir el tráfico entre los pods disponibles:
+* Los servicios de OpenShift (Service) distribuyen el tráfico entre los pods disponibles, usando balanceo de carga en capa 4 (TCP/UDP) o capa 7 (HTTP/HTTPS).
+* Las rutas (Route) gestionan el acceso externo, permitiendo reglas avanzadas de enrutamiento.
+* Es posible integrar balanceadores externos (como NSX-T o VPC Load Balancer) para distribuir el tráfico entrante entre los nodos del clúster.
+* La política externalTrafficPolicy: Local permite conservar la IP de origen en el tráfico balanceado.
+Estos mecanismos trabajan en conjunto para ofrecer aplicaciones resilientes, escalables y con alta disponibilidad en entornos OpenShift.
+
+=== Actualizaciones continuas y rollback de aplicaciones en OpenShift
+
+OpenShift permite gestionar el ciclo de vida de las aplicaciones mediante despliegues continuos y mecanismos de rollback para garantizar la disponibilidad y la estabilidad del servicio ante posibles fallos en las actualizaciones.
+
+==== Actualizaciones continuas
+
+- Las actualizaciones continuas se gestionan mediante estrategias de despliegue como rolling update, blue-green deployment o canary deployment.
+- En un despliegue rolling update, los pods antiguos se reemplazan gradualmente por nuevos pods con la versión actualizada, minimizando el downtime.
+- Es recomendable definir sondas de readiness y liveness para asegurar que los pods actualizados están listos antes de recibir tráfico.
+- El proceso típico de actualización es:
+  * Modificar el código y guardar los cambios en el repositorio.
+  * Lanzar un nuevo build en OpenShift, que genera una nueva imagen de la aplicación.
+  * OpenShift realiza automáticamente un nuevo deployment, eliminando los pods antiguos y creando los nuevos con la versión actualizada.
+
+==== Rollback de aplicaciones
+
+- Si surge un problema tras una actualización, OpenShift permite volver rápidamente a una versión anterior de la aplicación (rollback).
+- El historial de despliegues se almacena como revisiones, permitiendo identificar y volver a cualquier versión anterior.
+- Comandos útiles:
+.Ver el historial de despliegues:
+[source,bash]
+----
+oc rollout history deployment/<nombre>
+----
+.Realizar un rollback al último despliegue exitoso:
+[source,bash]
+----
+oc rollout undo deployment/<nombre>
+----
+.También se puede especificar una versión concreta:
+[source,bash]
+----
+oc rollout undo deployment/<nombre> --to-revision=<número>
+----
+- El rollback crea un nuevo ReplicaSet a partir de la plantilla de la revisión seleccionada y deshabilita temporalmente los triggers automáticos para evitar despliegues accidentales.
+- Es posible comprobar el estado de la aplicación tras el rollback usando port-forward o accediendo a los logs de los pods.
+
+==== Resumen
+
+OpenShift facilita tanto la actualización continua como la reversión rápida a versiones anteriores, asegurando la continuidad del servicio y la capacidad de respuesta ante incidencias en producción.
+
+=== Operaciones avanzadas con la utilidad de línea de comandos oc
+
+La utilidad de línea de comandos `oc` es fundamental para administrar y automatizar tareas avanzadas en OpenShift. A continuación se describen algunas de las operaciones más potentes y útiles que puedes realizar con esta herramienta.
+
+==== Gestión avanzada de pods y despliegues
+
+- **Escalado horizontal manual:** Puedes aumentar o disminuir el número de pods de un despliegue para ajustar la capacidad de la aplicación.
++
+[source,bash]
+----
+oc scale dc/<nombre-deploymentconfig> --replicas=3
+----
+Esto crea o elimina pods según el número especificado, permitiendo balancear la carga entre ellos.
+
+- **Autoescalado:** Configura el autoescalado para que el número de pods se ajuste automáticamente en función del consumo de CPU.
++
+[source,bash]
+----
+oc autoscale dc/<nombre-deploymentconfig> --min 1 --max 5 --cpu-percent=50
+----
+Esto crea un Horizontal Pod Autoscaler que monitoriza y escala los pods según la demanda.
+
+- **Actualizaciones continuas:** Tras modificar el código y lanzar un nuevo build, OpenShift despliega automáticamente la nueva versión de la aplicación, reemplazando los pods antiguos por los nuevos.
+
+- **Rollback de despliegues:** Si una actualización falla, puedes volver a la versión anterior fácilmente.
++
+[source,bash]
+----
+oc rollout undo dc/<nombre-deploymentconfig>
+----
+Esto revierte el despliegue al estado anterior, garantizando la estabilidad del servicio.
+
+==== Supervisión y tolerancia a fallos
+
+- **Tolerancia a fallos:** Si un pod falla o es eliminado, OpenShift crea automáticamente uno nuevo para mantener la disponibilidad.
++
+[source,bash]
+----
+oc delete pod/<nombre-pod>
+oc get pods
+----
+
+- **Balanceo de carga:** Todas las peticiones a la aplicación se distribuyen entre los pods activos, asegurando un servicio robusto y escalable.
+
+==== Creación y gestión de proyectos
+
+- **Crear un nuevo proyecto:**
++
+[source,bash]
+----
+oc new-project <nombre-proyecto>
+----
+Esto crea un espacio aislado para tus recursos y aplicaciones.
+
+- **Estado del proyecto:**
++
+[source,bash]
+----
+oc status
+----
+Muestra información sobre los recursos y el estado general del proyecto.
+
+==== Otras operaciones útiles
+
+- **Ayuda y documentación de recursos:**
++
+[source,bash]
+----
+oc explain <recurso>
+----
+Por ejemplo, `oc explain pods` muestra la definición y campos de los pods.
+
+- **Autocompletado en la terminal:** Puedes habilitar el autocompletado para Bash o Zsh, facilitando el uso de la CLI.
+
+- **Conexión al clúster:**
++
+[source,bash]
+----
+oc login https://<url-cluster> --token=<token>
+----
+Esto te autentica y configura el acceso al clúster de OpenShift.
+
+==== Resumen
+
+La utilidad `oc` permite realizar operaciones avanzadas como escalado, autoescalado, gestión de despliegues, rollback, tolerancia a fallos, balanceo de carga y administración de proyectos, todo desde la línea de comandos, facilitando la automatización y el control eficiente de entornos OpenShift.
+
+== ResourceQuotas en OpenShift
+
+Los ResourceQuotas permiten limitar la cantidad de recursos de computación (CPU, memoria) y almacenamiento persistente que pueden ser consumidos por los pods, contenedores y PersistentVolumeClaims dentro de un proyecto (namespace) en OpenShift. Esto ayuda a evitar la contención de recursos y asegura una distribución justa entre proyectos.
+
+.Tipos de cuotas comunes en OpenShift
+- **Resource Quotas**: Limitan el consumo de recursos de CPU, memoria y almacenamiento.
+- **Pod Quotas**: Limitan el número total de pods que pueden crearse en un proyecto.
+- **Limit Ranges**: Especifican valores mínimos, máximos y por defecto para recursos de contenedores y pods.
+
+=== Ejemplo de ResourceQuota en OpenShift
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+  namespace: mi-proyecto
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    persistentvolumeclaims: "5"
+    services: "10"
+----
+
+=== Ejemplo de LimitRange en OpenShift
+
+[source, yaml]
+----
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: resource-limits
+  namespace: mi-proyecto
+spec:
+  limits:
+    - type: Pod
+      max:
+        cpu: "2"
+        memory: "1Gi"
+      min:
+        cpu: "200m"
+        memory: "6Mi"
+    - type: Container
+      max:
+        cpu: "1"
+        memory: "512Mi"
+      min:
+        cpu: "100m"
+        memory: "4Mi"
+      default:
+        cpu: "300m"
+        memory: "200Mi"
+      defaultRequest:
+        cpu: "200m"
+        memory: "100Mi"
+----
+
+== Seguridad y Control de Acceso
+
+La seguridad y el control de acceso en OpenShift se basan en una combinación de buenas prácticas, mecanismos técnicos y políticas que protegen tanto la plataforma como las aplicaciones desplegadas.
+
+.Principios fundamentales
+* OpenShift protege todos los elementos de la plataforma, desde el sistema operativo hasta los contenedores y las aplicaciones, mediante controles de cifrado, políticas de seguridad y control de acceso estricto.
+* El control de acceso es esencial para garantizar que solo usuarios y sistemas autorizados puedan acceder o modificar los recursos, protegiendo la información confidencial contra accesos no autorizados.
+
+.Control de acceso basado en roles (RBAC)
+* OpenShift utiliza RBAC para definir y gestionar permisos.
+* Los Roles y ClusterRoles especifican conjuntos de permisos a nivel de proyecto (namespace) o de clúster.
+* Los RoleBindings y ClusterRoleBindings asignan estos roles a usuarios, grupos o cuentas de servicio.
+* El RBAC sigue el principio de mínimo privilegio, otorgando solo los permisos estrictamente necesarios según la función o responsabilidad del usuario o sistema.
+
+.Autenticación y autorización
+* El acceso a la API de OpenShift requiere autenticación, validando la identidad de usuarios y servicios mediante integraciones con proveedores de identidad como LDAP, GitHub o Google.
+* Tras la autenticación, la autorización determina qué acciones puede realizar cada usuario o servicio, aplicando las políticas RBAC y otros controles.
+* El control de admisiones valida o modifica las solicitudes antes de que sean procesadas por el servidor API, reforzando las políticas de seguridad.
+
+.Aislamiento y segmentación
+* El uso de proyectos y namespaces permite aislar recursos y limitar el alcance de los permisos, reduciendo el impacto de posibles brechas de seguridad.
+* La microsegmentación y políticas de red, como las que ofrece Calico, permiten controlar el tráfico entre pods, namespaces y servicios, implementando un enfoque de seguridad Zero Trust.
+
+.Restricciones de ejecución y políticas de seguridad
+* OpenShift aplica restricciones mediante Security Context Constraints (SCCs), que limitan las capacidades de los contenedores, como la ejecución como usuario root o el acceso a recursos del host.
+* En general, los contenedores se ejecutan como procesos no-root y con UIDs restringidos por el proyecto, minimizando el riesgo de escalada de privilegios.
+* El acceso SSH a nodos está deshabilitado por defecto y la comunicación entre componentes críticos se realiza de forma cifrada[10].
+
+.Buenas prácticas adicionales
+* Supervisar y auditar los accesos y actividades en el clúster.
+* Limitar los privilegios de los contenedores y evitar el uso de permisos elevados salvo que sea estrictamente necesario.
+* Segmentar los recursos y usuarios mediante proyectos, namespaces y políticas de red.
+* Mantener actualizado el clúster y aplicar las recomendaciones de seguridad del proveedor.
+
+
+=== Autenticación y autorización (RBAC, HTPasswd, grupos y usuarios)
+
+OpenShift proporciona un marco robusto de autenticación y autorización para controlar el acceso a recursos y operaciones en el clúster. Los mecanismos principales incluyen RBAC, autenticación mediante HTPasswd, gestión de usuarios y grupos.
+
+==== Autenticación
+
+*La autenticación* verifica la identidad de los usuarios que acceden al clúster. OpenShift soporta múltiples proveedores de identidad, siendo uno de los más sencillos HTPasswd:
+
+- **HTPasswd:** Utiliza un archivo plano (`htpasswd`) que almacena los nombres de usuario y contraseñas cifradas. Este archivo se referencia en la configuración del proveedor de identidad del clúster.
+- Para configurar HTPasswd, se crea un recurso personalizado (CR) de tipo `OAuth` que referencia el secreto con el archivo generado por la utilidad `htpasswd`.
+- Tras aplicar la configuración, los usuarios definidos pueden autenticarse con sus credenciales y acceder al clúster.
+
+==== Usuarios
+
+- Un *usuario* en OpenShift representa a una persona o sistema que interactúa con la plataforma. Los usuarios pueden ser administradores, desarrolladores u operadores.
+- Los usuarios se pueden crear mediante la CLI:
++
+[source,bash]
+----
+oc create user <nombre_usuario>
+----
+- Para asociar una identidad a un usuario (por ejemplo, tras autenticación con HTPasswd):
++
+[source,bash]
+----
+oc create useridentitymapping <proveedor>:<usuario>
+----
+
+==== Grupos
+
+- Los *grupos* permiten gestionar permisos de manera colectiva, facilitando la administración de roles y accesos para varios usuarios simultáneamente.
+- Crear un grupo e incluir usuarios:
++
+[source,bash]
+----
+oc adm groups new <nombre_grupo> <usuario1> <usuario2>
+----
+- Los grupos pueden ser asignados a roles, simplificando la gestión de permisos en equipos o departamentos.
+
+==== Autorización y RBAC
+
+*La autorización* determina qué acciones puede realizar cada usuario o grupo una vez autenticado, utilizando el modelo de Control de Acceso Basado en Roles (RBAC):
+
+- **RBAC** permite definir roles (conjuntos de permisos) y asignarlos a usuarios o grupos mediante *bindings*.
+- Existen dos niveles de roles:
+  * *ClusterRoles* y *ClusterRoleBindings*: aplican a todo el clúster.
+  * *Roles* y *RoleBindings*: aplican a un proyecto (namespace) específico.
+- El principio de mínimo privilegio recomienda asignar solo los permisos necesarios y revisar periódicamente los roles y bindings.
+- Ejemplo de asignación de un rol de visualización a un usuario en un proyecto:
++
+[source,bash]
+----
+oc adm policy add-role-to-user view <usuario> -n <proyecto>
+----
+
+==== Buenas prácticas
+
+- Usar grupos para simplificar la gestión de permisos.
+- Limitar el uso de usuarios con privilegios elevados.
+- Segregar accesos por proyectos para reducir la superficie de ataque.
+- Revisar y eliminar roles o grupos no utilizados.
+
+OpenShift integra estos mecanismos para garantizar un acceso seguro, flexible y auditable a los recursos del clúster.
+
+=== Gestión de secretos y ConfigMaps
+
+OpenShift proporciona mecanismos para separar la configuración y los datos sensibles de las aplicaciones mediante los objetos Secrets y ConfigMaps. Esta aproximación mejora la seguridad, la portabilidad y la flexibilidad de los despliegues.
+
+==== Secrets
+
+- Un `Secret` es un objeto diseñado para almacenar información confidencial, como contraseñas, claves, archivos de configuración privados o credenciales de acceso a repositorios.
+- Los Secrets desacoplan los datos sensibles de los pods y pueden ser montados como volúmenes o inyectados como variables de entorno en los contenedores.
+- Los datos en los Secrets se almacenan codificados en base64, aunque esto no es un mecanismo de cifrado fuerte; se recomienda limitar el acceso a estos objetos mediante políticas de control de acceso.
+- Ejemplo de definición de un Secret en YAML:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-secret
+  namespace: my-namespace
+type: Opaque
+data:
+  username: dmFsdWUtMQ0K
+  password: dmFsdWUtMg0KDQo=
+stringData:
+  hostname: myapp.mydomain.com
+----
+- Para cambiar un Secret, es necesario eliminar el pod y crear uno nuevo para que recoja la actualización.
+- Es fundamental gestionar los secretos con buenas prácticas de seguridad: acceso autenticado, control de privilegios y auditoría de accesos.
+
+==== ConfigMaps
+
+- Un `ConfigMap` es un objeto de la API que almacena datos de configuración no confidenciales en formato clave-valor.
+- Permite desacoplar la configuración de la imagen de la aplicación, facilitando la portabilidad y la actualización de parámetros sin necesidad de reconstruir los contenedores.
+- Los ConfigMaps pueden ser usados por los pods como variables de entorno, argumentos de línea de comandos o archivos montados en volúmenes.
+- Ejemplo de comandos para gestionar ConfigMaps:
++
+[source,bash]
+----
+oc create configmap <configmap_name>
+oc describe configmap <configmap_name>
+oc get configmap
+----
+- Precaución: los ConfigMaps no proporcionan cifrado; no deben usarse para datos sensibles.
+
+==== Diferencias y buenas prácticas
+
+- Usar Secrets para toda información confidencial y restringir su acceso mediante RBAC.
+- Usar ConfigMaps para parámetros de configuración generales que no sean sensibles.
+- Mantener la gestión de ambos recursos centralizada y versionada, y auditar los accesos y cambios.
+
+La correcta gestión de Secrets y ConfigMaps es esencial para la seguridad y la flexibilidad en entornos OpenShift, permitiendo separar la configuración y los datos sensibles del ciclo de vida de las aplicaciones.
+
+=== Políticas de seguridad y restricciones de contexto en OpenShift
+
+==== Introducción
+
+OpenShift implementa un robusto modelo de seguridad basado en múltiples capas para proteger aplicaciones en contenedores. Entre sus mecanismos clave destacan el control de acceso basado en roles (RBAC), la gestión de secretos, la auditoría, el cifrado de datos y, especialmente, las Restricciones de Contexto de Seguridad (SCC).
+
+==== Restricciones de Contexto de Seguridad (SCC)
+
+Las SCC (`Security Context Constraints`) permiten a los administradores controlar las acciones y accesos que pueden realizar los pods dentro del clúster. Estas restricciones definen bajo qué condiciones se aceptan y ejecutan los pods, limitando capacidades como:
+
+- Ejecución de contenedores privilegiados (`allowPrivilegedContainer`)
+- Escalado de privilegios (`allowPrivilegeEscalation`)
+- Uso de directorios del host como volúmenes
+- Contexto SELinux y usuario de ejecución
+- Acceso a namespaces y red del host
+- Permisos de grupos suplementarios y configuración de `FSGroup`
+- Tipos de volúmenes permitidos
+- Uso de perfiles `seccomp`
+- Acceso de solo lectura al sistema de archivos raíz
+
+Las SCC se aplican por defecto a todos los pods, salvo que se especifique lo contrario, siendo la SCC `restricted` (o `restricted-v2` en versiones recientes) la más estricta y la que se asigna por defecto a usuarios autenticados.
+
+===== Ejemplo de SCC en YAML
+
+[source,yaml]
+----
+kind: SecurityContextConstraints
+apiVersion: security.openshift.io/v1
+metadata:
+  name: scc-admin
+allowPrivilegedContainer: true
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+  - my-admin-user
+groups:
+  - my-admin-group
+----
+
+==== SCC Predeterminadas en OpenShift
+
+[cols="1,3"]
+|===
+|Nombre de SCC |Descripción
+
+|`anyuid` |Permite ejecutar pods con cualquier UID/GID.
+|`hostaccess` |Permite acceso a todos los namespaces del host.
+|`hostmount-anyuid` |Permite montajes de host y cualquier UID.
+|`hostnetwork` |Permite uso de red y puertos del host.
+|`node-exporter` |Acceso específico para Prometheus node exporter.
+|`nonroot` |Permite cualquier UID que no sea root.
+|`privileged` |Permite todas las funciones privilegiadas y de host.
+|`restricted` |Deniega acceso a funciones del host; uso por defecto.
+|`hostnetwork-v2` |Versión ajustada de `hostnetwork` para alinearse con Pod Security Standards.
+|`nonroot-v2` |Versión ajustada de `nonroot` para alinearse con Pod Security Standards.
+|`restricted-v2` |Versión ajustada de `restricted` para alinearse con Pod Security Standards.
+|===
+
+==== Gestión y asignación de SCC
+
+- Las SCC se gestionan mediante la CLI de OpenShift (`oc`) y pueden asignarse a usuarios, grupos o cuentas de servicio específicas.
+- Es recomendable no modificar las SCC predeterminadas salvo en los campos de `priority`, `users` o `groups`.
+- Para dar acceso a una SCC a una cuenta de servicio:  
+  `oc adm policy add-scc-to-user <scc> -z <serviceaccount> -n <namespace>`
+
+==== Mejores prácticas de seguridad
+
+- **Principio de menor privilegio:** Asignar solo los permisos estrictamente necesarios a usuarios y pods.
+- **Separación por namespaces/proyectos:** Limitar el alcance de los permisos y recursos.
+- **Revisión periódica de políticas:** Auditar y actualizar las SCC y RBAC según evolucionen los requisitos.
+- **Evitar contenedores privilegiados:** Solo permitirlos en casos muy justificados y bajo control estricto.
+- **Escaneo de imágenes y gestión de vulnerabilidades:** Mantener imágenes actualizadas y libres de vulnerabilidades.
+- **Cifrado de datos y secretos:** Proteger datos sensibles tanto en tránsito como en reposo.
+- **Auditoría y monitoreo:** Habilitar logs y alertas para detectar actividades sospechosas.
+
+==== Cumplimiento y normativas
+
+OpenShift facilita el cumplimiento de estándares como PCI DSS, HIPAA o GDPR gracias a su modelo de aislamiento, control de acceso granular, gestión de secretos y capacidades de auditoría. La correcta configuración y uso de SCC es fundamental para garantizar la seguridad y el cumplimiento regulatorio[12].
+
+==== Referencias rápidas
+
+- Las SCC son exclusivas de OpenShift y no son equivalentes a las Pod Security Policies de Kubernetes.
+- El uso inadecuado de SCC puede provocar fallos de seguridad o de funcionamiento en los componentes del clúster.
+- Para más detalles sobre cada SCC y su configuración, consultar la documentación oficial de OpenShift.
+
+
+== Redes y Almacenamiento en OpenShift
+
+=== Redes
+
+OpenShift utiliza una arquitectura de red basada en SDN (Software Defined Networking), lo que permite una gestión flexible y segura del tráfico entre pods, servicios y el exterior del clúster.
+
+*Componentes clave:*
+- **SDN y CNI:** OpenShift SDN fue el plugin por defecto, pero desde la versión 4.12 se utiliza OVN-Kubernetes como CNI principal, manteniendo compatibilidad y mejorando capacidades.
+- **Multitenancy:** Permite aislar redes entre proyectos o equipos mediante namespaces y políticas de red, garantizando que los recursos de un equipo no interfieran con los de otro.
+- **Network Policies:** Definen el tráfico permitido entre pods, namespaces o rangos de IP. Por defecto, todo el tráfico está permitido, pero se puede restringir mediante objetos `NetworkPolicy` a nivel de proyecto.
+- **Ingress y Routes:** OpenShift introduce el recurso `Route` como abstracción para exponer servicios hacia el exterior, asignando un hostname accesible públicamente y permitiendo configuración SSL/TLS. El Ingress Controller gestiona el tráfico entrante y lo enruta a los servicios internos.
+- **Egress:** El tráfico saliente puede ser controlado mediante políticas de egress y routers específicos.
+- **Patrones de diseño de red:** Desde clústeres simples (todo conectado) hasta entornos multitenant o híbridos, adaptando la arquitectura a las necesidades de seguridad y escalabilidad.
+
+=== Almacenamiento
+
+OpenShift gestiona tanto almacenamiento efímero como persistente, cubriendo necesidades desde pruebas rápidas hasta aplicaciones empresariales con alta disponibilidad y durabilidad de datos[10].
+
+*Tipos de almacenamiento:*
+- **Almacenamiento efímero:** Datos temporales que se pierden al reiniciar o eliminar el pod. Ejemplos: `emptyDir`, almacenamiento en disco local del nodo trabajador. Útil para cachés, logs temporales y pruebas unitarias[10].
+- **Almacenamiento persistente:** Requiere volúmenes que sobrevivan a reinicios de pods o reubicaciones. Se implementa mediante Persistent Volumes (PV) y Persistent Volume Claims (PVC).
+
+*Conceptos clave:*
+- **PV y PVC:** Los administradores crean PVs (recursos de almacenamiento físico o virtual). Los usuarios solicitan almacenamiento mediante PVCs, que se enlazan automáticamente a un PV disponible.
+- **Aprovisionamiento dinámico:** Gracias a la Container Storage Interface (CSI), OpenShift puede aprovisionar volúmenes bajo demanda desde múltiples proveedores (NFS, Ceph, AWS EBS, Azure Disk, etc.) usando StorageClasses.
+- **OpenShift Data Foundation (ODF):** Solución definida por software basada en Ceph, NooBaa y Rook, que unifica almacenamiento de bloques, archivos y objetos, optimizada para entornos híbridos y multicloud. Ofrece alta disponibilidad, escalabilidad y gestión centralizada.
+- **Clases de almacenamiento:** Permiten definir políticas de replicación, compresión, retención y rendimiento. El administrador puede crear múltiples StorageClasses según necesidades de la aplicación (por ejemplo, clases con 2 o 3 réplicas, con compresión, etc.).
+- **Política de retención:** Al eliminar un PVC, la política `Delete` borra el volumen subyacente, mientras que `Retain` lo conserva para recuperación manual.
+
+.*Resumen de ventajas:*
+- Flexibilidad para soportar cargas de trabajo con y sin estado.
+- Integración con proveedores de almacenamiento locales y en la nube.
+- Gestión centralizada y automatizada de volúmenes persistentes.
+- Seguridad y multitenancy tanto en red como en almacenamiento.
+
+
+=== Servicios, redes y enrutamiento en OpenShift
+
+==== Servicios
+
+Un *servicio* en OpenShift es un recurso que expone una aplicación ejecutándose en uno o varios pods, proporcionando una IP virtual estable y un nombre DNS interno para acceder a ella. Esto permite el balanceo de carga entre réplicas y la abstracción de la infraestructura subyacente, facilitando el escalado y la tolerancia a fallos sin afectar a los clientes.
+
+- Cada servicio recibe una IP virtual y un nombre DNS gestionado por el sistema DNS interno de OpenShift.
+- Los servicios pueden ser de tipo *ClusterIP* (acceso interno), *NodePort* (acceso externo a través de puertos de los nodos) o *LoadBalancer* (integración con balanceadores externos en la nube).
+- El servicio selecciona los pods mediante etiquetas, permitiendo que el tráfico se dirija automáticamente a las instancias correctas.
+
+==== Redes
+
+OpenShift utiliza una red definida por software (SDN) que proporciona una red de clúster unificada para la comunicación entre pods, servicios y recursos externos[11].
+
+- Cada pod recibe una IP única dentro del clúster, permitiendo la comunicación directa pod-a-pod sin NAT.
+- El tráfico entre pods puede ser controlado mediante *Network Policies*, que definen reglas de entrada y salida a nivel de namespace o pod.
+- OpenShift SDN implementa diferentes modelos de aislamiento, desde redes planas hasta multitenancy, usando Open vSwitch (OVS) y VXLAN para encapsular el tráfico[11].
+- El *Cluster Network Operator* gestiona los componentes de red, incluyendo el plugin CNI y el DNS interno.
+
+==== Enrutamiento
+
+El enrutamiento en OpenShift permite exponer aplicaciones al exterior mediante recursos *Route* e *Ingress*, gestionados por el *Ingress Controller*.
+
+- **Route:** Es un recurso específico de OpenShift que asigna un nombre de host externo a un servicio, permitiendo acceso HTTP/HTTPS desde fuera del clúster. Ofrece funciones avanzadas como TLS passthrough, re-encryption y balanceo de tráfico para despliegues blue-green.
+- **Ingress:** Es el recurso estándar de Kubernetes para gestionar el acceso externo a servicios HTTP/HTTPS. OpenShift lo implementa a través del *Ingress Operator*, que despliega el *Ingress Controller* y gestiona reglas de enrutamiento y certificados.
+- El enrutador de OpenShift puede ser personalizado y soporta múltiples implementaciones (HAProxy, NGINX, etc.), permitiendo la integración con balanceadores de carga externos o servicios cloud.
+- El tráfico de entrada es gestionado por los nodos de worker que ejecutan el controlador de Ingress, garantizando alta disponibilidad mediante réplicas distribuidas.
+
+==== Service Mesh
+
+Para arquitecturas de microservicios, OpenShift integra *Service Mesh* (basado en Istio, Kiali y Jaeger), que permite gestionar, observar y asegurar la comunicación entre servicios, facilitando la implementación de políticas, telemetría y trazabilidad avanzada.
+
+==== Resumen visual
+
+[cols="1,3"]
+|===
+|Componente |Descripción
+
+|Servicio (Service) |Abstracción que expone pods a través de una IP y DNS internos, con balanceo de carga.
+|Red SDN |Red superpuesta que conecta todos los pods; control granular mediante Network Policies.
+|Route |Recurso OpenShift para exponer servicios externamente con nombre de host y opciones avanzadas de TLS.
+|Ingress |Recurso estándar Kubernetes para reglas de acceso HTTP/HTTPS externo.
+|Service Mesh |Infraestructura para gestión avanzada de tráfico, seguridad y observabilidad entre microservicios.
+|===
+
+==== Referencias
+
+- OpenShift Networking: SDN, servicios, enrutadores y políticas[11].
+- Gestión de rutas e Ingress Controller.
+- Service Mesh para microservicios.
+
+
+=== Almacenamiento persistente y gestión de volúmenes en OpenShift
+
+==== Fundamentos del almacenamiento persistente
+
+El almacenamiento persistente en OpenShift permite conservar datos de aplicaciones más allá del ciclo de vida de los contenedores, garantizando que la información sobreviva a reinicios, migraciones o fallos de pods. A diferencia del almacenamiento efímero (como `emptyDir`), los volúmenes persistentes mantienen datos críticos como bases de datos, configuraciones y archivos de usuario.
+
+==== Componentes clave
+
+* **Persistent Volume (PV):** Recurso físico o virtual de almacenamiento provisionado por el administrador. Ejemplos: volúmenes en bloque (OCI Block Volume, AWS EBS), sistemas de archivos (NFS, OCI File Storage) o soluciones SDS como Ceph.
+* **Persistent Volume Claim (PVC):** Solicitud de almacenamiento por parte de un usuario/aplicación. Define tamaño, modo de acceso (ReadWriteOnce/ReadWriteMany) y StorageClass.
+* **StorageClass:** "Plantilla" para aprovisionamiento dinámico. Define parámetros como tipo de replicación, cifrado o rendimiento. OpenShift Data Foundation (ODF) incluye clases preconfiguradas como `ocs-storagecluster-ceph-rbd`.
+
+==== Proceso de aprovisionamiento
+
+[source,bash]
+----
+# Ejemplo de PVC usando ODF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ocs-storagecluster-ceph-rbd
+  resources:
+    requests:
+      storage: 100Gi
+----
+
+1. El usuario crea una PVC especificando requisitos.
+2. El controlador CSI aprovisiona automáticamente un PV que cumple los requisitos.
+3. OpenShift vincula la PVC al PV disponible.
+4. El pod consume el almacenamiento montando la PVC.
+
+==== Soluciones destacadas
+
+* **OpenShift Data Foundation (ODF):** Solución SDS unificada (bloque/archivo/objeto) basada en Ceph. Ofrece:
+  - Alta disponibilidad y escalabilidad
+  - Snapshots y clones
+  - Cifrado automático de datos
+  - Soporte multicloud
+* **Red Hat Gluster Storage:** Almacenamiento distribuido para configuraciones *container-native* (contenedorizado) o *container-ready* (nodos dedicados)
+* **Proveedores cloud:** Integración nativa con OCI Block Volume, AWS EBS, Azure Disk y otros mediante plugins CSI
+
+==== Mejores prácticas
+
+* **Principio de mínimo privilegio:** Asignar solo la capacidad necesaria en las PVC
+* **Monitorización:** Supervisar uso/rendimiento con herramientas como Prometheus (configurando almacenamiento persistente para sus métricas)[10]
+* **Retención:** Usar política `Retain` para datos críticos (evita borrado al eliminar PVC)
+* **Escalabilidad:** Habilitar `allowVolumeExpansion: true` en StorageClass para ampliar volúmenes sin interrupciones
+* **Resiliencia:** Replicación multi-nodo con soluciones como ODF para HA
+
+==== Migración desde OpenShift 3.x
+
+* **CSI reemplaza plugins antiguos:** FlexVolume y almacenamiento local requieren reconfiguración
+* **ODF como sucesor de Gluster:** Para despliegues container-native con aprovisionamiento dinámico
+
+==== Comparativa de opciones
+
+[cols="1,1,2"]
+|===
+| Tipo | Casos de uso | Limitaciones
+| Volúmenes en bloque (CSI) | Bases de datos, aplicaciones transaccionales | Escalado vertical requerido para ampliación
+| Sistemas de archivos (NFS/OCI) | Contenido compartido, repositorios | Latencia superior a bloques
+| SDS (ODF/Gluster) | Entornos híbridos, alta resiliencia | Complejidad de gestión inicial
+|===
+
+
+== Monitorización y Gestión en OpenShift
+
+OpenShift proporciona una plataforma integral para la monitorización y gestión de clústeres, aplicaciones y recursos de infraestructura. Su enfoque combina herramientas nativas, integraciones con soluciones de terceros y capacidades avanzadas de visualización, alertas y automatización para garantizar el rendimiento, la disponibilidad y la eficiencia operativa.
+
+.Monitorización nativa en OpenShift
+
+- **Stack preinstalado y autogestionado:** OpenShift incluye una pila de monitorización preconfigurada, autoinstalada y autoactualizable, basada en Prometheus, Alertmanager y Grafana, que monitoriza tanto los componentes principales de la plataforma como los proyectos definidos por el usuario.
+- **Visualización y dashboards:** La consola web de OpenShift ofrece paneles visuales con métricas de estado del clúster, uso de recursos, eventos y alertas activas. Desde la consola se accede a dashboards personalizados y al Prometheus UI para consultas avanzadas (PromQL).
+- **Alertas y notificaciones:** Alertmanager gestiona un conjunto de alertas predefinidas que notifican automáticamente a los administradores sobre problemas críticos, como sobrecarga de recursos, fallos en nodos o inconsistencias en el estado de los objetos del clúster.
+- **Persistencia de métricas:** El almacenamiento persistente de métricas permite el análisis histórico y la generación de tendencias para la planificación de capacidad y la detección de anomalías.
+
+.Monitorización de aplicaciones y rendimiento
+
+- **APM (Application Performance Monitoring):** Instrumentación del código para identificar cuellos de botella, errores y medir la experiencia del usuario.
+- **Monitorización de infraestructura:** Recopilación de métricas de CPU, memoria, disco y uso de red en hosts, nodos y contenedores, permitiendo la gestión proactiva de recursos y la optimización del clúster.
+- **Logs y trazas:** Recolección y gestión de logs de contenedores, pods, eventos y auditoría para facilitar el diagnóstico y la resolución de incidencias.
+
+.Integración con herramientas externas
+
+- **Soluciones de terceros:** OpenShift se integra con plataformas líderes como Datadog, Dynatrace, Instana, Site24x7 y Broadcom, que ofrecen capacidades avanzadas de observabilidad, inteligencia artificial para detección de anomalías, correlación de eventos y automatización de respuestas.
+- **Gestión centralizada:** Estas herramientas permiten la visualización y gestión unificada de múltiples clústeres y entornos, facilitando la operación en escenarios multi-nube o híbridos.
+
+.Gestión de recursos y capacidad
+
+- **Visibilidad completa:** Monitorización de todos los niveles (clúster, nodo, pod, contenedor, réplica, namespace) para optimizar la asignación de recursos y evitar cuellos de botella.
+- **Planificación y escalabilidad:** Análisis de tendencias, predicción de cargas y ajuste dinámico de recursos mediante políticas de escalado automático y recomendaciones basadas en IA.
+- **Multi-tenancy:** Gestión eficiente de recursos en entornos multiusuario mediante dashboards personalizados y alertas específicas por proyecto o equipo.
+
+.Mejores prácticas
+
+- **Personalización de alertas y dashboards:** Adaptar las reglas de alerta y los paneles a las necesidades específicas del negocio y las aplicaciones[10].
+- **Automatización de respuestas:** Integrar la monitorización con sistemas de automatización para reducir el tiempo de resolución de incidencias (MTTR).
+- **Auditoría y cumplimiento:** Uso de logs y métricas para auditorías de seguridad y cumplimiento normativo.
+
+.Resumen visual
+
+[cols="1,3"]
+|===
+|Componente |Descripción
+
+|Prometheus & Alertmanager |Monitorización y alertas nativas, almacenamiento de métricas y consultas avanzadas.
+|Grafana |Dashboards personalizables para visualización de métricas.
+|Consola web OpenShift |Gestión visual de métricas, alertas y recursos.
+|Herramientas externas (Datadog, Instana, Dynatrace, Site24x7) |Observabilidad avanzada, IA, gestión multi-clúster y automatización.
+|Gestión de logs y trazas |Diagnóstico, auditoría y análisis de incidencias.
+|===
+
+
+=== Registro y monitorización de aplicaciones y clústeres en OpenShift
+
+==== Observabilidad integral
+
+OpenShift ofrece un enfoque de observabilidad que abarca la recopilación, almacenamiento, distribución, visualización y análisis de datos relacionados con indicadores (métricas), registros (logs), rastros (traces) y eventos. Esta integración permite diagnosticar y solucionar problemas rápidamente, optimizando tanto la infraestructura como las aplicaciones antes de que los incidentes impacten en los usuarios finales.
+
+==== Monitorización de clústeres
+
+- **Stack nativo:** OpenShift incluye una pila de monitorización preconfigurada basada en Prometheus, Alertmanager y Grafana, que monitoriza tanto los componentes principales del clúster como los proyectos definidos por el usuario.
+- **Visualización y alertas:** El dashboard de OpenShift permite consultar métricas en tiempo real y visualizar tendencias, además de gestionar reglas de alerta para notificar incidencias críticas del clúster.
+- **Monitorización personalizada:** Los administradores pueden habilitar la monitorización para proyectos de usuario, permitiendo que desarrolladores y equipos definan métricas, alertas y dashboards específicos para sus aplicaciones.
+- **Agentes y DaemonSets:** Soluciones como Broadcom DX APM, Dynatrace o Datadog despliegan agentes en cada nodo mediante DaemonSets para monitorizar el estado y el rendimiento del clúster y sus aplicaciones.
+
+==== Registro de aplicaciones y clústeres
+
+- **Logs en tiempo real:** Los registros de pods y aplicaciones pueden visualizarse en tiempo real desde la consola web o la CLI (`oc logs <nombre-del-pod>`), facilitando el seguimiento de la ejecución y la resolución de errores.
+- **Registro persistente:** Para almacenamiento a largo plazo, OpenShift despliega un sistema de registro centralizado (por defecto, Elasticsearch como log store y Kibana para visualización), recolectando logs de nodos y contenedores. También es posible reenviar logs a sistemas externos.
+- **Filtrado y análisis avanzado:** El UI de Logging y herramientas como LokiStack permiten filtrar, consultar y analizar registros por etiquetas, tipo de log o formato estructurado, facilitando la trazabilidad y el análisis forense.
+- **Logs de máquinas virtuales:** En OpenShift Virtualization, los logs de las máquinas virtuales se obtienen desde los pods de lanzamiento asociados, tanto desde la consola como desde la CLI.
+
+==== Mejores prácticas y herramientas externas
+
+- **Automatización desde el inicio:** Integrar agentes de monitorización (como Dynatrace OneAgent) desde el principio del ciclo de vida de la aplicación garantiza cobertura total y alertas contextuales.
+- **Inteligencia artificial:** Herramientas como Dynatrace usan IA para reducir el ruido de alertas, identificar problemas reales y optimizar recursos mediante análisis predictivo.
+- **Gestión centralizada:** El administrador debe definir la solución de registro y monitorización a utilizar, informando a los equipos sobre el acceso a logs y métricas según el espacio de nombres o proyecto.
+- **Persistencia y visualización:** Kibana, Grafana y la consola de OpenShift ofrecen dashboards personalizables para análisis visual de logs y métricas, facilitando la toma de decisiones basada en datos.
+
+.Resumen de herramientas de monitorización y registro en OpenShift
+[cols="1,3"]
+|===
+|Componente |Descripción
+
+|Prometheus, Alertmanager, Grafana |Monitorización nativa de métricas, alertas y dashboards.
+|OpenShift Logging (Elasticsearch, Kibana) |Registro centralizado, almacenamiento y visualización de logs.
+|LokiStack, Vector |Ingesta y consulta avanzada de logs.
+|Herramientas externas (Dynatrace, Broadcom DX APM) |Monitorización avanzada, IA, integración multi-clúster.
+|Consola web y CLI |Acceso en tiempo real a logs y métricas por pod, aplicación o clúster.
+|===
+
+=== Ejemplos de código para registro y monitorización en OpenShift
+
+.Consulta de logs de un pod desde la CLI
+
+[source,bash]
+----
+oc get pods -n mi-proyecto
+oc logs nombre-del-pod -n mi-proyecto
+----
+
+.Definición de una alerta personalizada en Prometheus
+
+[source,yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: alerta-alta-cpu
+  namespace: mi-proyecto
+spec:
+  groups:
+  - name: reglas-cpu
+    rules:
+    - alert: UsoAltoCPU
+      expr: sum(rate(container_cpu_usage_seconds_total{namespace="mi-proyecto"}[5m])) > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Uso de CPU elevado en el proyecto mi-proyecto"
+        description: "El uso de CPU ha superado el umbral de 1 core durante 5 minutos."
+----
+
+.Persistent Volume Claim (PVC) para almacenamiento persistente
+
+[source,yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mi-pvc
+  namespace: mi-proyecto
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+----
+
+.Network Policy para restringir el tráfico a un pod
+
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: solo-acepta-de-app
+  namespace: mi-proyecto
+spec:
+  podSelector:
+    matchLabels:
+      app: mi-app
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          rol: frontend
+----
+
+.Configuración de un Route para exponer un servicio
+
+[source,yaml]
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mi-app-route
+  namespace: mi-proyecto
+spec:
+  to:
+    kind: Service
+    name: mi-app-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+----
+
+==== 6. Dashboard personalizado en Grafana (JSON)
+
+[source,json]
+----
+{
+  "dashboard": {
+    "title": "Uso de CPU y Memoria",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace='mi-proyecto'}[5m]))"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "sum(container_memory_usage_bytes{namespace='mi-proyecto'})"
+          }
+        ]
+      }
+    ]
+  }
+}
+----
+
+.Consulta PromQL para Prometheus
+
+[source,promql]
+----
+sum(rate(container_cpu_usage_seconds_total{namespace="mi-proyecto"}[5m]))
+----
+
+=== Uso de métricas y logs para troubleshooting en OpenShift
+
+.Flujo de diagnóstico
+
+[source,text]
+----
+1. Detectar anomalía (alerta, degradación rendimiento)
+2. Consultar métricas en tiempo real (Prometheus/Grafana)
+3. Analizar logs relevantes (Kibana/oc logs)
+4. Correlacionar eventos con métricas
+5. Identificar root cause y aplicar corrección
+----
+
+.Métricas clave para troubleshooting
+[source,promql]
+----
+// 1. Uso de recursos por pod
+container_cpu_usage_seconds_total{namespace="mi-app"}
+container_memory_usage_bytes{pod=~"frontend-.*"}
+
+// 2. Healthcheck fallidos
+kube_pod_container_status_restarts_total{namespace="mi-app"}
+
+// 3. Latencia de red
+histogram_quantile(0.95, sum(rate(istio_request_duration_seconds_bucket{app="backend"}[5m])) by (le))
+
+// 4. Errores HTTP
+sum(rate(istio_requests_total{response_code=~"5.."}[5m])) by (destination_service)
+----
+
+.Consultas útiles en Kibana (OpenShift Logging)
+[source,text]
+----
+// 1. Buscar errores en pods específicos
+kubernetes.namespace_name:"mi-app" AND (message:"ERROR" OR message:"Exception")
+
+// 2. Logs de init containers fallidos
+kubernetes.container_name:".*init.*" AND (stream:"stderr" OR level:"error")
+
+// 3. Tiempos de respuesta lentos
+message:"Request processing time" AND duration_ms:>1000
+
+// 4. Problemas de conexión a BD
+message:"Connection refused" OR message:"Timeout"
+----
+
+==== Ejemplo práctico: Diagnóstico de alto CPU
+
+[source,bash]
+----
+# Paso 1: Identificar pod problemático
+oc adm top pods -n mi-app
+
+# Paso 2: Obtener logs del pod con alto CPU
+oc logs frontend-7d4f8 -n mi-app --since=10m | grep -i "cpu intensive"
+
+# Paso 3: Consultar métricas detalladas
+curl -G "http://thanos-querier.openshift-monitoring:9090/api/v1/query" \
+--data-urlencode 'query=sum(rate(container_cpu_usage_seconds_total{pod="frontend-7d4f8"}[5m])) by (container)'
+
+# Paso 4: Generar flame graph (requiere perf-tools)
+oc debug pod/frontend-7d4f8 -- perf record -F 99 -a -g -- sleep 30
+----
+
+==== Patrones comunes de troubleshooting
+
+[cols="1,2,2"]
+|===
+| Síntoma | Métricas clave | Log patterns
+
+| Altos reinicios
+| `kube_pod_container_status_restarts_total`
+| `OOMKilled`, `CrashLoopBackOff`
+
+| Latencia alta
+| `istio_request_duration_seconds`
+| `Timeout`, `Request processing time`
+
+| Errores 5xx
+| `istio_requests_total{response_code=~"5.."}`
+| `Connection refused`, `NullPointerException`
+
+| Alto uso CPU
+| `container_cpu_usage_seconds_total`
+| `while(true)`, `CPU intensive operation`
+|===
+
+==== Mejores prácticas
+
+1. **Instrumentación aplicativa:** Agregar logs estructurados con niveles (DEBUG, INFO, ERROR)
+2. **Contexto en logs:** Incluir request_id, user_id en cada entrada
+3. **Alertas inteligentes:** Basar alertas en tendencias, no umbrales estáticos
+4. **Distributed tracing:** Usar Jaeger/Istio para rastrear transacciones entre microservicios
+5. **Retención adecuada:** Mantener métricas 30 días y logs 7 días para análisis histórico
+
+
+== Casos Prácticos en OpenShift
+
+=== Despliegue de bases de datos en OpenShift
+
+==== Patrones clave
+* **Operadores de Kubernetes**: Automatizan despliegue, escalado y gestión del ciclo de vida (ej: OperatorHub para PostgreSQL/MySQL)
+* **Persistencia garantizada**: Uso de `PersistentVolumeClaims` con StorageClasses para volúmenes dinámicos
+* **Configuración segura**: Secretos para credenciales y ConfigMaps para ajustes
+
+==== Ejemplo: PostgreSQL con aprovisionamiento dinámico
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: password
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgredb
+      volumes:
+      - name: postgredb
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+----
+
+[source,yaml]
+----
+# PVC para almacenamiento persistente
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+----
+
+=== Despliegue de WordPress usando templates
+
+==== Flujo con plantilla predefinida
+
+.**Descargar plantilla**:  
+[source,bash]
+----
+curl -O 'https://raw.githubusercontent.com/openshift-evangelists/wordpress-quickstart/master/templates/classic-standalone.json'
+----
+
+.**Crear en OpenShift**:  
+[source,bash]
+----
+oc create -f classic-standalone.json
+----
+
+.**Procesar parámetros**:
+[source,bash]
+----
+oc process wordpress-nginx-php
+-p DB_VOLUME_CAPACITY=5Gi
+-p APP_CPU_LIMIT=500m
+-p MYSQL_ROOT_PASSWORD=$(openssl rand -hex 16)
+| oc apply -f -
+----
+
+
+==== Estructura típica de template
+[source,yaml]
+----
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+name: wordpress-template
+objects:
+- kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+ name: wordpress
+spec:
+ template:
+   spec:
+     containers:
+     - name: wordpress
+       image: wordpress:php8.0
+       env:
+       - name: WORDPRESS_DB_PASSWORD
+         valueFrom:
+           secretKeyRef:
+             name: mysql-secret
+             key: password
+- kind: Service
+apiVersion: v1
+metadata:
+ name: wordpress-service
+spec:
+ ports:
+ - port: 80
+ selector:
+   app: wordpress
+parameters:
+- name: DB_VOLUME_CAPACITY
+description: Tamaño del volumen para MySQL
+value: "5Gi"
+- name: APP_CPU_LIMIT
+description: Límite de CPU para WordPress
+value: "500m"
+----
+
+==== Buenas prácticas para aplicaciones complejas
+.**Separación de capas**:
+* Frontend (Nginx/PHP)
+* Backend (WordPress)
+* Base de datos (MySQL) en Deployment independiente
+.**Configuración parametrizada**:
+* Variables para recursos (CPU/memoria)
+* Credenciales mediante Secrets
+* URLs de repositorios personalizables
+.**Escalado horizontal**:
+[source,bash]
+----
+oc scale deployment/wordpress --replicas=3
+----
+.**Rutas con TLS**:
+[source,yaml]
+----
+kind: Route
+spec:
+tls:
+termination: edge
+key:  |
+  -----BEGIN CERTIFICATE-----
+  [...]
+  -----END CERTIFICATE-----
+certificate: |
+    -----BEGIN CERTIFICATE-----
+    [...]
+    -----END CERTIFICATE-----
+host: wordpress.example.com
+to:
+  kind: Service
+  name: wordpress-service
+port:
+  targetPort: 80
+----

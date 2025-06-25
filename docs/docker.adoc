@@ -1,0 +1,4658 @@
+= Temario: Curso de Docker
+:toc: left
+:icons: font
+:source-highlighter: highlight.js
+:toclevels: 3
+:toc-title: Contenidos
+
+
+== Introducción a Docker
+=== Conceptos básicos de contenedores y virtualización
+
+==== ¿Qué es la virtualización?
+
+La virtualización es una tecnología que permite ejecutar múltiples sistemas operativos y aplicaciones en un solo servidor físico, creando entornos virtuales independientes llamados máquinas virtuales (VMs). Cada VM tiene su propio sistema operativo, recursos asignados (CPU, memoria, almacenamiento) y funciona de manera aislada respecto a las demás.
+
+.*Ventajas de la virtualización tradicional:*
+* Aislamiento total entre entornos.
+* Mejor aprovechamiento del hardware.
+* Facilidad para crear, clonar y migrar entornos.
+
+.*Desventajas:*
+* Consumo elevado de recursos, ya que cada VM ejecuta un sistema operativo completo.
+* Arranque más lento comparado con otras tecnologías.
+
+==== ¿Qué es un contenedor?
+
+Un contenedor es una unidad ligera y portátil que permite empaquetar una aplicación junto con todas sus dependencias (librerías, configuraciones, binarios) en un solo paquete. A diferencia de las VMs, los contenedores comparten el núcleo del sistema operativo del host, pero mantienen el aislamiento a nivel de proceso y sistema de archivos.
+
+.*Ventajas de los contenedores:*
+* Arranque casi instantáneo.
+* Menor consumo de recursos.
+* Portabilidad entre diferentes entornos (desarrollo, pruebas, producción).
+* Facilidad para escalar y orquestar aplicaciones.
+
+*Diferencias clave entre contenedores y máquinas virtuales:*
+
+[cols="1,1",options="header"]
+|===
+| Contenedores | Máquinas Virtuales
+| Comparten el kernel del host | Cada VM tiene su propio kernel
+| Arranque en segundos | Arranque en minutos
+| Bajo consumo de recursos | Mayor consumo de recursos
+| Ideal para microservicios | Ideal para aplicaciones monolíticas o legacy
+|===
+
+==== ¿Cómo funcionan los contenedores?
+
+Los contenedores utilizan tecnologías del sistema operativo como namespaces y cgroups (en Linux) para aislar procesos, limitar recursos y proporcionar un entorno seguro y controlado. Todo lo necesario para ejecutar la aplicación se incluye en la imagen del contenedor.
+
+.*Ejemplo de ciclo de vida de un contenedor:*
+1. El desarrollador crea una imagen con la aplicación y sus dependencias.
+2. El usuario ejecuta un contenedor a partir de esa imagen.
+3. El contenedor se ejecuta de forma aislada, pero puede comunicarse con otros contenedores o el exterior si se configura.
+4. Al detener el contenedor, los procesos se eliminan, pero la imagen permanece disponible para futuros usos.
+
+==== Ejemplo práctico: diferencias entre VM y contenedor
+
+*Ejemplo de comando para crear una VM (usando VirtualBox):*
+[source,sh]
+----
+VBoxManage createvm --name "mi_vm" --register
+VBoxManage modifyvm "mi_vm" --memory 2048 --acpi on --boot1 dvd --nic1 nat
+VBoxManage createhd --filename "mi_vm.vdi" --size 10000
+----
+
+*Ejemplo de comando para crear y ejecutar un contenedor Docker:*
+[source,sh]
+----
+docker run -d --name mi_contenedor nginx
+----
+
+Como puedes ver, crear y ejecutar un contenedor es mucho más sencillo y rápido que una VM.
+
+==== Resumen gráfico
+
+[plantuml, format="svg"]
+----
+@startuml
+actor Usuario
+Usuario -> Docker: docker run nginx
+Docker -> Kernel Host: Solicita recursos
+Kernel Host -> Docker: Asigna recursos
+Docker -> Contenedor: Inicia proceso aislado
+Contenedor -> Usuario: Servicio disponible
+@enduml
+----
+
+=== Historia y evolución de Docker
+
+==== Orígenes de Docker
+
+Docker fue presentado públicamente en marzo de 2013 por Solomon Hykes, como un proyecto interno de la empresa dotCloud. Su objetivo era facilitar el despliegue y la portabilidad de aplicaciones, resolviendo problemas comunes en el desarrollo y la operación de software, como la famosa frase "en mi máquina funciona".
+
+Antes de Docker, existían tecnologías de contenedores en Linux como LXC (Linux Containers), pero eran complejas de usar y carecían de una experiencia de usuario sencilla y estandarizada. Docker simplificó el uso de contenedores al proporcionar una interfaz fácil de usar, herramientas de automatización y un formato de empaquetado universal: la imagen Docker.
+
+==== Línea de tiempo de hitos importantes
+
+[cols="1,3",options="header"]
+|===
+| Año | Hito
+| 2013 | Lanzamiento de Docker como proyecto open source. Uso inicial de LXC como backend.
+| 2014 | Docker 1.0. Se introduce el formato de imágenes y el registro público Docker Hub.
+| 2015 | Docker reemplaza LXC por su propia biblioteca de ejecución: `libcontainer` (ahora runc).
+| 2016 | Nacen proyectos del ecosistema: Docker Compose (orquestación simple), Docker Swarm (clustering).
+| 2017 | Se crea la Open Container Initiative (OCI) para estandarizar imágenes y runtimes.
+| 2018 | Kubernetes se consolida como el orquestador de contenedores dominante, compatible con Docker.
+| 2020 | Docker Inc. se enfoca en herramientas para desarrolladores, y el runtime de Docker se desacopla de Kubernetes.
+| 2023 | Docker sigue siendo la herramienta de referencia para desarrollo y pruebas con contenedores.
+|===
+
+==== Evolución tecnológica
+
+- *De LXC a runc*: Docker comenzó usando LXC, pero luego desarrolló su propio runtime (`runc`), que se convirtió en estándar abierto.
+- *Imágenes y capas*: Introdujo el concepto de imágenes por capas, facilitando la reutilización y la eficiencia en la descarga y almacenamiento.
+- *Docker Hub*: Primer registro público de imágenes, permitiendo compartir y reutilizar aplicaciones de manera global.
+- *Herramientas complementarias*: Docker Compose para definir aplicaciones multicontenedor, Docker Swarm para orquestación nativa, y compatibilidad con Kubernetes.
+
+==== Impacto en la industria
+
+.Docker revolucionó la forma en que se desarrollan, prueban y despliegan aplicaciones:
+- Aceleró la adopción de microservicios y DevOps.
+- Facilitó la integración continua y entrega continua (CI/CD).
+- Mejoró la portabilidad entre entornos (desarrollo, pruebas, producción, nube).
+- Impulsó la estandarización de contenedores a través de la OCI.
+
+==== Ejemplo: primer comando histórico de Docker
+
+[source,sh]
+----
+docker run hello-world
+----
+
+Este comando descarga una imagen de prueba y ejecuta un contenedor, demostrando la simplicidad y potencia de Docker desde sus inicios.
+
+==== Resumen gráfico de la evolución
+
+[plantuml, format="svg"]
+----
+@startuml
+:dotCloud;
+:dotCloud; -> :Docker (2013);
+:Docker (2013); -> :Docker 1.0 (2014);
+:Docker 1.0 (2014); -> :Docker Compose/Swarm (2016);
+:Docker Compose/Swarm (2016); -> :OCI (2017);
+:OCI (2017); -> :Kubernetes Integration (2018);
+:Kubernetes Integration (2018); -> :Docker Desktop (2020+);
+@enduml
+----
+
+=== Arquitectura de Docker
+
+==== Componentes principales de Docker
+
+Docker está compuesto por varios elementos que trabajan juntos para gestionar contenedores de forma eficiente y segura:
+
+- *Docker Engine*: Es el núcleo de Docker, responsable de crear, ejecutar y gestionar contenedores. Incluye el demonio (`dockerd`), la API REST y la CLI.
+- *Docker Daemon (`dockerd`)*: Proceso que corre en segundo plano y gestiona los objetos Docker (imágenes, contenedores, redes, volúmenes).
+- *Docker CLI (`docker`)*: Herramienta de línea de comandos que permite a los usuarios interactuar con Docker Engine.
+- *Docker API*: Interfaz RESTful que permite a otras aplicaciones comunicarse con Docker.
+- *Docker Images*: Plantillas inmutables que contienen el sistema de archivos y las dependencias necesarias para ejecutar una aplicación.
+- *Docker Containers*: Instancias en ejecución de imágenes Docker, aisladas y gestionadas por el Engine.
+- *Docker Registry*: Repositorio para almacenar y compartir imágenes (por ejemplo, Docker Hub o registros privados).
+
+==== Diagrama de arquitectura
+
+[plantuml, format="svg"]
+....
+@startuml
+actor Usuario
+Usuario -> CLI: docker run, docker build, etc.
+CLI -> API: Solicitudes REST
+API -> Daemon: Procesamiento de solicitudes
+Daemon -> Registry: pull/push imágenes
+Daemon -> Contenedor: Crear/Iniciar/Detener
+Daemon -> Volúmenes/Redes: Gestionar recursos
+@enduml
+....
+
+==== Flujo de trabajo típico
+
+1. El usuario ejecuta un comando con la CLI (`docker run`, `docker build`, etc.).
+2. La CLI se comunica con el Docker Daemon a través de la API.
+3. El Daemon gestiona la creación de imágenes, el arranque de contenedores, la configuración de redes y volúmenes.
+4. Si es necesario, el Daemon descarga imágenes desde un registro (Docker Hub o privado).
+5. El Daemon inicia el contenedor, asignando recursos y configurando el entorno según lo solicitado.
+
+==== Ejemplo práctico: ciclo de vida de un contenedor
+
+[source,sh]
+----
+# Descargar una imagen desde Docker Hub
+docker pull nginx
+
+# Crear y ejecutar un contenedor a partir de la imagen
+docker run -d --name webserver -p 8080:80 nginx
+
+# Ver los contenedores en ejecución
+docker ps
+
+# Detener el contenedor
+docker stop webserver
+
+# Eliminar el contenedor
+docker rm webserver
+----
+
+==== Resumen de la arquitectura
+
+- La arquitectura de Docker está diseñada para ser modular, eficiente y segura.
+- Permite la gestión de aplicaciones en contenedores de forma sencilla, facilitando la portabilidad y escalabilidad.
+- El uso de registros de imágenes y la separación entre CLI, Daemon y API permite la integración con herramientas externas y la automatización de flujos DevOps.
+
+==== Ventajas de la arquitectura de Docker
+
+- *Aislamiento*: Cada contenedor es independiente y seguro.
+- *Portabilidad*: Las imágenes pueden ejecutarse en cualquier sistema con Docker Engine.
+- *Escalabilidad*: Fácil de integrar con orquestadores como Docker Swarm o Kubernetes.
+- *Automatización*: Integración sencilla con pipelines de CI/CD y herramientas de infraestructura como código.
+
+=== Instalación de Docker y alternativas a Docker
+
+==== Instalación de Docker en diferentes sistemas operativos
+
+Docker puede instalarse en la mayoría de los sistemas operativos modernos. A continuación se detallan los pasos para los entornos más comunes:
+
+===== Instalación en Linux (Ubuntu/Debian)
+
+[source,sh]
+----
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+# Cierra sesión y vuelve a entrar para que el grupo 'docker' tenga efecto
+----
+
+===== Instalación en CentOS/RHEL
+
+[source,sh]
+----
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+----
+
+===== Instalación en Windows y macOS
+
+- Descarga Docker Desktop desde https://www.docker.com/products/docker-desktop
+- Sigue el asistente de instalación.
+- Docker Desktop incluye Docker Engine, Docker CLI, Docker Compose y una interfaz gráfica.
+
+===== Verificación de la instalación
+
+[source,sh]
+----
+docker --version
+docker run hello-world
+----
+
+El comando `hello-world` descarga una imagen de prueba y ejecuta un contenedor para verificar que Docker funciona correctamente.
+
+==== Alternativas a Docker
+
+Aunque Docker es la herramienta más popular, existen otras tecnologías de contenedores y runtimes compatibles con el estándar OCI (Open Container Initiative):
+
+[cols="1,3",options="header"]
+|===
+| Alternativa | Descripción
+| Podman | Herramienta compatible con la CLI de Docker, pero sin daemon centralizado. Permite ejecutar contenedores rootless (sin privilegios de root).
+| containerd | Runtime de contenedores ligero, utilizado internamente por Docker y Kubernetes.
+| CRI-O | Runtime optimizado para Kubernetes, compatible con imágenes OCI.
+| LXC/LXD | Contenedores de sistema completos, más cercanos a las máquinas virtuales ligeras.
+| rkt (Rocket) | Proyecto de CoreOS, ahora discontinuado, que buscaba ser una alternativa a Docker.
+|===
+
+===== Ejemplo: uso básico de Podman
+
+Podman es muy similar a Docker en su uso:
+
+[source,sh]
+----
+podman run -d --name mi_contenedor nginx
+podman ps
+podman stop mi_contenedor
+----
+
+===== Diferencias clave entre Docker y Podman
+
+- Podman no requiere un daemon centralizado.
+- Permite ejecutar contenedores sin privilegios de root.
+- Compatible con la mayoría de los comandos de Docker.
+
+==== Consideraciones de seguridad y permisos
+
+- Es recomendable no ejecutar contenedores como root.
+- Docker Desktop en Windows/macOS utiliza una máquina virtual ligera para ejecutar el motor de Docker.
+- En entornos empresariales, evalúa alternativas como Podman para mayor seguridad y cumplimiento.
+
+==== Resumen
+
+- Docker es la opción más extendida y fácil de usar para comenzar con contenedores.
+- Existen alternativas como Podman, containerd y CRI-O, especialmente útiles en entornos de producción y Kubernetes.
+- La instalación de Docker es sencilla y está bien documentada para todos los sistemas operativos principales.
+
+=== Primeros pasos: comandos básicos
+
+En este apartado aprenderás los comandos esenciales para comenzar a trabajar con Docker desde la terminal. Estos comandos te permitirán descargar imágenes, crear y gestionar contenedores, así como inspeccionar el estado de tu entorno Docker.
+
+==== Descargar y ejecutar tu primer contenedor
+
+.El siguiente comando descarga la imagen `hello-world` desde Docker Hub y ejecuta un contenedor que imprime un mensaje de bienvenida:
+[source,sh]
+----
+docker run hello-world
+----
+
+==== Listar imágenes y contenedores
+
+.Para ver las imágenes descargadas en tu sistema:
+[source,sh]
+----
+docker images
+----
+
+.Para listar los contenedores en ejecución:
+[source,sh]
+----
+docker ps
+----
+
+.Para ver todos los contenedores (incluidos los detenidos):
+[source,sh]
+----
+docker ps -a
+----
+
+==== Descargar imágenes desde Docker Hub
+
+.Puedes descargar cualquier imagen pública usando el comando `pull`:
+[source,sh]
+----
+docker pull nginx
+docker pull ubuntu:22.04
+----
+
+==== Crear y ejecutar un contenedor
+
+.Ejecuta un contenedor en segundo plano (modo "detached") y mapea el puerto 8080 del host al 80 del contenedor:
+[source,sh]
+----
+docker run -d --name webserver -p 8080:80 nginx
+----
+
+==== Acceder a un contenedor en ejecución
+
+.Para abrir una terminal interactiva dentro de un contenedor:
+[source,sh]
+----
+docker exec -it webserver bash
+# Si el contenedor no tiene bash, puedes usar sh:
+docker exec -it webserver sh
+----
+
+==== Detener y eliminar contenedores
+
+.Detener un contenedor:
+[source,sh]
+----
+docker stop webserver
+----
+
+.Eliminar un contenedor:
+[source,sh]
+----
+docker rm webserver
+----
+
+==== Eliminar imágenes
+
+.Para eliminar una imagen que no esté en uso por ningún contenedor, usa el siguiente comando:
+[source,sh]
+----
+docker rmi nginx
+----
+
+==== Ver logs de un contenedor
+
+.Para ver los logs de un contenedor en ejecución, puedes usar el siguiente comando:
+[source,sh]
+----
+docker logs webserver
+----
+
+==== Resumen de comandos básicos
+
+[cols="1,2",options="header"]
+|===
+| Comando | Descripción
+| docker run imagen | Ejecuta un contenedor a partir de una imagen
+| docker ps | Lista los contenedores en ejecución
+| docker ps -a | Lista todos los contenedores
+| docker images | Lista las imágenes locales
+| docker pull imagen | Descarga una imagen desde Docker Hub
+| docker stop id/nombre | Detiene un contenedor
+| docker rm id/nombre | Elimina un contenedor
+| docker rmi imagen | Elimina una imagen
+| docker exec -it id/nombre bash | Accede a la terminal de un contenedor
+| docker logs id/nombre | Muestra los logs de un contenedor
+|===
+
+==== Ejemplo práctico: ciclo de vida de un contenedor
+
+.En este ejemplo, descargaremos la imagen de nginx, crearemos un contenedor, lo ejecutaremos y luego lo detendremos y eliminaremos.
+[source,sh]
+----
+# Descargar la imagen de nginx
+docker pull nginx
+
+# Crear y ejecutar el contenedor
+docker run -d --name miweb -p 8080:80 nginx
+
+# Verificar que está en ejecución
+docker ps
+
+# Acceder al contenedor
+docker exec -it miweb bash
+
+# Detener y eliminar el contenedor
+docker stop miweb
+docker rm miweb
+----
+
+Estos comandos te permitirán empezar a trabajar con Docker de manera práctica y efectiva.
+
+== Imágenes y Contenedores Docker
+
+Una imagen Docker es una plantilla inmutable que contiene todo lo necesario para ejecutar una aplicación: código, dependencias, variables de entorno y archivos de configuración. Las imágenes se construyen en capas, lo que permite la reutilización y eficiencia en el almacenamiento y la transferencia.
+
+=== Entendiendo las imágenes Docker
+
+Una imagen Docker es una plantilla inmutable que contiene todo lo necesario para ejecutar una aplicación: el código fuente, las dependencias, las variables de entorno y los archivos de configuración. Las imágenes son el punto de partida para crear contenedores y se construyen en capas, lo que permite eficiencia y reutilización.
+
+==== Características principales de las imágenes Docker
+
+- *Inmutabilidad*: Una vez creada, la imagen no cambia. Esto garantiza que los entornos sean reproducibles.
+- *Portabilidad*: Una imagen puede ejecutarse en cualquier sistema que tenga Docker Engine, sin importar el sistema operativo subyacente.
+- *Eficiencia*: Las imágenes se construyen en capas. Si varias imágenes comparten capas, Docker solo almacena una copia de cada capa, ahorrando espacio y acelerando descargas.
+- *Versionado*: Las imágenes pueden tener múltiples etiquetas (tags) para identificar versiones o variantes.
+
+==== Dockerfile
+
+Un Dockerfile es un archivo de texto que contiene una serie de instrucciones para construir una imagen Docker. Define cómo se debe configurar el entorno, qué software instalar y cómo ejecutar la aplicación.
+
+.EL archivo Dockerfile contiene instrucciones que Docker utiliza para construir una imagen. Aquí tienes un resumen de las instrucciones más comunes:
+* *FROM*: Especifica la imagen base sobre la que se construirá la nueva imagen. Es el primer comando de cualquier Dockerfile.
+* *LABEL*: Añade metadatos a la imagen en formato clave=valor, como el autor, la versión, etc.
+* *RUN*: Ejecuta comandos en la imagen durante el proceso de construcción, por ejemplo instalar paquetes o crear archivos y directorios.
+* *CMD*: Define el comando por defecto que se ejecutará cuando se inicie un contenedor a partir de la imagen. Solo puede haber uno; si hay varios, solo el último tiene efecto.
+* *EXPOSE*: Indica qué puertos estarán disponibles para exponer en el contenedor. Es informativo y no abre realmente los puertos.
+* *ENV*: Establece variables de entorno en la imagen, que estarán disponibles para los procesos que se ejecuten en el contenedor.
+* *ADD*: Copia archivos y directorios desde el contexto de construcción al sistema de archivos de la imagen. Además, permite copiar desde URLs y descomprime archivos comprimidos automáticamente.
+* *COPY*: Copia archivos y directorios desde el contexto de construcción al sistema de archivos de la imagen, pero sin las funcionalidades adicionales de ADD.
+* *ENTRYPOINT*: Define el ejecutable principal que se ejecutará cuando se inicie el contenedor, permitiendo que el contenedor actúe como un comando o servicio específico.
+* *VOLUME*: Crea un punto de montaje para volúmenes, permitiendo el almacenamiento persistente de datos fuera del contenedor.
+* *WORKDIR*: Establece el directorio de trabajo para las siguientes instrucciones RUN, CMD, ENTRYPOINT, COPY y ADD.
+* *USER*: Especifica el usuario y grupo con el que se ejecutarán las siguientes instrucciones del Dockerfile y los procesos del contenedor.
+* *ARG*: Define variables que pueden pasarse durante el proceso de construcción de la imagen (build-time variables), pero no estarán disponibles en tiempo de ejecución.
+* *ONBUILD*: Especifica instrucciones que se ejecutarán cuando la imagen resultante se use como base para otra imagen (útil para imágenes base personalizadas).
+* *SHELL*: Cambia el intérprete de comandos por defecto para las instrucciones RUN, CMD y ENTRYPOINT.
+
+==== Estructura de una imagen Docker
+
+Cada imagen está formada por una serie de capas apiladas. Cada instrucción en un Dockerfile (como `RUN`, `COPY`, `ADD`) crea una nueva capa. Cuando se actualiza una imagen, solo se descargan las capas nuevas o modificadas.
+
+[plantuml, format="svg"]
+....
+@startuml
+start
+:FROM ubuntu:22.04;
+:RUN apt-get update;
+:COPY . /app;
+:RUN pip install -r requirements.txt;
+:CMD ["python", "app.py"];
+stop
+@enduml
+....
+
+==== Ejemplo: listar imágenes disponibles
+
+Para ver las imágenes almacenadas localmente en tu sistema:
+
+[source,sh]
+----
+docker images
+----
+
+.Output esperado:
+[cols="1,1,1,1,1",options="header"]
+|===
+| REPOSITORY | TAG | IMAGE ID | CREATED | SIZE
+| ubuntu     | 22.04 | 123abc456def | 2 weeks ago | 77MB
+| nginx      | latest | 789def123abc | 3 days ago  | 133MB
+|===
+
+==== Descargar una imagen desde Docker Hub
+
+Puedes descargar imágenes públicas usando el comando `pull`:
+
+[source,sh]
+----
+docker pull nginx
+docker pull ubuntu:22.04
+----
+
+==== Inspeccionar una imagen
+
+Para ver los detalles y metadatos de una imagen:
+
+[source,sh]
+----
+docker inspect nginx
+----
+
+Esto muestra información como las capas, variables de entorno, comandos de inicio y más.
+
+==== Ejemplo de uso de una imagen
+
+Para ejecutar un contenedor a partir de una imagen:
+
+[source,sh]
+----
+docker run -d --name miweb -p 8080:80 nginx
+----
+
+==== Buenas prácticas al trabajar con imágenes
+
+- Utiliza imágenes oficiales y mantenidas siempre que sea posible.
+- Mantén tus imágenes actualizadas para evitar vulnerabilidades.
+- Elimina imágenes que no uses con `docker rmi <imagen>` para ahorrar espacio.
+- Usa etiquetas (`tags`) para identificar versiones específicas y evitar sorpresas en producción.
+
+
+=== Gestión de contenedores
+
+La gestión de contenedores es una de las tareas fundamentales al trabajar con Docker. Un contenedor es una instancia en ejecución de una imagen, y su ciclo de vida puede ser gestionado mediante una serie de comandos que permiten crearlo, iniciarlo, detenerlo, reiniciarlo, eliminarlo y monitorizarlo.
+
+==== Crear y ejecutar contenedores
+
+.Para crear y ejecutar un contenedor a partir de una imagen:
+[source,sh]
+----
+docker run -d --name mi_contenedor nginx
+----
+
+- `-d`: Ejecuta el contenedor en segundo plano (detached).
+- `--name`: Asigna un nombre personalizado al contenedor.
+
+==== Listar contenedores
+
+.Para ver los contenedores en ejecución:
+[source,sh]
+----
+docker ps
+----
+
+.Para ver todos los contenedores, incluidos los detenidos:
+[source,sh]
+----
+docker ps -a
+----
+
+==== Detener, iniciar y reiniciar contenedores
+
+.Detener un contenedor:
+[source,sh]
+----
+docker stop mi_contenedor
+----
+
+.Iniciar un contenedor detenido:
+[source,sh]
+----
+docker start mi_contenedor
+----
+
+.Reiniciar un contenedor:
+[source,sh]
+----
+docker restart mi_contenedor
+----
+
+==== Eliminar contenedores
+
+.Para eliminar un contenedor detenido:
+[source,sh]
+----
+docker rm mi_contenedor
+----
+
+.Para eliminar varios contenedores a la vez:
+[source,sh]
+----
+docker rm contenedor1 contenedor2 contenedor3
+----
+
+==== Inspeccionar contenedores
+
+.Puedes obtener información detallada sobre un contenedor (configuración, red, volúmenes, etc.):
+[source,sh]
+----
+docker inspect mi_contenedor
+----
+
+==== Ver el uso de recursos de los contenedores
+
+.Para monitorizar el consumo de CPU, memoria y red de los contenedores en tiempo real:
+[source,sh]
+----
+docker stats
+----
+
+==== Copiar archivos entre el host y el contenedor
+
+.Copiar un archivo del host al contenedor:
+[source,sh]
+----
+docker cp archivo.txt mi_contenedor:/ruta/destino/
+----
+
+.Copiar un archivo del contenedor al host:
+[source,sh]
+----
+docker cp mi_contenedor:/ruta/origen/archivo.txt ./
+----
+
+==== Ejemplo práctico: gestión completa de un contenedor
+
+[source,sh]
+----
+# Descargar la imagen de nginx
+docker pull nginx
+
+# Crear y ejecutar el contenedor
+docker run -d --name webtest -p 8080:80 nginx
+
+# Verificar que está en ejecución
+docker ps
+
+# Detener el contenedor
+docker stop webtest
+
+# Iniciar el contenedor nuevamente
+docker start webtest
+
+# Eliminar el contenedor
+docker stop webtest
+docker rm webtest
+----
+
+==== Buenas prácticas en la gestión de contenedores
+
+- Asigna nombres descriptivos a los contenedores para facilitar su identificación.
+- Elimina contenedores que ya no utilices para liberar recursos.
+- Utiliza etiquetas y variables de entorno para personalizar el comportamiento de los contenedores.
+- Supervisa el uso de recursos para evitar cuellos de botella en el sistema.
+
+La correcta gestión de contenedores es clave para mantener entornos de desarrollo y producción ordenados, eficientes y seguros.
+
+=== Ciclo de vida de un contenedor
+
+El ciclo de vida de un contenedor Docker abarca todas las etapas por las que pasa un contenedor, desde su creación hasta su eliminación. Comprender este ciclo es fundamental para gestionar aplicaciones de manera eficiente y automatizada.
+
+==== Etapas del ciclo de vida
+
+**Creación**  
+.El contenedor se crea a partir de una imagen, pero aún no está en ejecución.
+[source,sh]
+----
+docker create --name mi_contenedor nginx
+----
+
+**Ejecución (Start/Run)**  
+.El contenedor pasa a estar en ejecución, ejecutando el proceso principal definido en la imagen.
+[source,sh]
+----
+docker start mi_contenedor
+# O bien, crear y ejecutar en un solo paso:
+docker run -d --name mi_contenedor nginx
+----
+
+**Pausa y reanudación**  
+.Puedes pausar temporalmente todos los procesos de un contenedor y luego reanudarlos.
+[source,sh]
+----
+docker pause mi_contenedor
+docker unpause mi_contenedor
+----
+
+**Detención**  
+.El contenedor se detiene, finalizando el proceso principal, pero su estado y sistema de archivos persisten.
+[source,sh]
+----
+docker stop mi_contenedor
+----
+
+**Reinicio**  
+.Puedes reiniciar un contenedor detenido.
+[source,sh]
+----
+docker restart mi_contenedor
+----
+
+**Eliminación**  
+.El contenedor se elimina del sistema. Sus datos efímeros se pierden, pero los volúmenes persistentes permanecen.
+[source,sh]
+----
+docker rm mi_contenedor
+----
+
+==== Diagrama del ciclo de vida
+
+[plantuml, format="svg"]
+....
+@startuml
+[*] --> Creado
+Creado --> EnEjecucion : start/run
+EnEjecucion --> Pausado : pause
+Pausado --> EnEjecucion : unpause
+EnEjecucion --> Detenido : stop
+Detenido --> EnEjecucion : start
+Detenido --> Eliminado : rm
+EnEjecucion --> Eliminado : rm -f
+@enduml
+....
+
+==== Ejemplo práctico
+
+.A continuación, se muestra un ejemplo práctico de cómo gestionar el ciclo de vida de un contenedor Docker. En este caso, crearemos un contenedor a partir de la imagen `nginx`, lo iniciaremos, lo pausaremos y reanudaremos, y finalmente lo detendremos y eliminaremos.
+[source,sh]
+----
+# Crear un contenedor (sin ejecutarlo)
+docker create --name demo nginx
+
+# Iniciar el contenedor
+docker start demo
+
+# Pausar y reanudar
+docker pause demo
+docker unpause demo
+
+# Detener el contenedor
+docker stop demo
+
+# Reiniciar el contenedor
+docker restart demo
+
+# Eliminar el contenedor
+docker rm demo
+----
+
+==== Estados de un contenedor
+
+- *created*: El contenedor ha sido creado pero no está en ejecución.
+- *running*: El contenedor está ejecutando su proceso principal.
+- *paused*: Los procesos del contenedor están detenidos temporalmente.
+- *stopped/exited*: El proceso principal terminó y el contenedor está detenido.
+- *removed*: El contenedor ha sido eliminado del sistema.
+
+.Puedes consultar el estado de todos los contenedores con:
+[source,sh]
+----
+docker ps -a
+----
+
+=== Comandos esenciales (run, ps, pull, exec, logs, etc.)
+
+En este apartado se explican de forma didáctica y detallada los comandos fundamentales de Docker para la gestión diaria de imágenes y contenedores. Cada comando se acompaña de ejemplos prácticos, explicaciones de sus opciones más relevantes y buenas prácticas de uso.
+
+==== docker run
+
+El comando `docker run` es el punto de partida para trabajar con contenedores. Permite crear e iniciar un contenedor a partir de una imagen.
+
+*Sintaxis básica:*
+[source,sh]
+----
+docker run [opciones] imagen [comando]
+----
+
+.*Opciones más utilizadas:*
+- `-d`: Ejecuta el contenedor en segundo plano (detached).
+- `--name nombre`: Asigna un nombre personalizado al contenedor.
+- `-p host:contenedor`: Mapea puertos del host al contenedor.
+- `-v host:contenedor`: Monta volúmenes o directorios.
+- `-e VAR=valor`: Define variables de entorno.
+- `--rm`: Elimina el contenedor al detenerse.
+
+*Ejemplo:*
+[source,sh]
+----
+docker run -d --name miweb -p 8080:80 nginx
+----
+Este comando descarga la imagen de nginx (si no está presente), crea un contenedor llamado `miweb`, mapea el puerto 8080 del host al 80 del contenedor y lo ejecuta en segundo plano.
+
+==== docker ps
+
+Permite listar los contenedores en ejecución.
+
+*Comando básico:*
+[source,sh]
+----
+docker ps
+----
+
+*Para ver todos los contenedores (incluidos los detenidos):*
+[source,sh]
+----
+docker ps -a
+----
+
+*Opciones útiles:*
+- `-q`: Muestra solo los IDs de los contenedores.
+- `--format`: Personaliza la salida.
+
+*Ejemplo:*
+[source,sh]
+----
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+----
+
+==== docker pull
+
+Descarga una imagen desde un registro (por defecto, Docker Hub).
+
+*Ejemplo:*
+[source,sh]
+----
+docker pull ubuntu:22.04
+docker pull nginx
+----
+
+Esto asegura que tienes la última versión de la imagen antes de crear un contenedor.
+
+==== docker exec
+
+Permite ejecutar comandos dentro de un contenedor en ejecución, ideal para tareas de administración o depuración.
+
+*Ejemplo para abrir una terminal interactiva:*
+[source,sh]
+----
+docker exec -it miweb bash
+----
+Si el contenedor no tiene bash, puedes usar `sh`:
+[source,sh]
+----
+docker exec -it miweb sh
+----
+
+*Ejemplo para ejecutar un comando puntual:*
+[source,sh]
+----
+docker exec miweb ls /usr/share/nginx/html
+----
+
+==== docker logs
+
+Muestra los logs (salida estándar y de error) de un contenedor, útil para depuración y monitoreo.
+
+*Ejemplo:*
+[source,sh]
+----
+docker logs miweb
+----
+
+*Opciones útiles:*
+- `-f`: Sigue los logs en tiempo real (modo "follow").
+- `--tail N`: Muestra solo las últimas N líneas.
+
+*Ejemplo:*
+[source,sh]
+----
+docker logs -f --tail 50 miweb
+----
+
+==== Otros comandos esenciales
+
+.**docker stop**: Detiene un contenedor en ejecución.
+[source,sh]
+----
+docker stop miweb
+----
+
+.**docker start**: Inicia un contenedor detenido.
+[source,sh]
+----
+docker start miweb
+----
+
+.**docker rm**: Elimina un contenedor detenido.
+[source,sh]
+----
+docker rm miweb
+----
+
+.**docker rmi**: Elimina una imagen (debe estar sin uso).
+[source,sh]
+----
+docker rmi nginx
+----
+
+.**docker images**: Lista las imágenes locales.
+[source,sh]
+----
+docker images
+----
+
+.**docker inspect**: Muestra información detallada de un contenedor o imagen.
+[source,sh]
+----
+docker inspect miweb
+----
+
+==== Resumen práctico
+
+[cols="1,2",options="header"]
+|===
+| Comando | Descripción
+| docker run | Crea y ejecuta un contenedor
+| docker ps | Lista contenedores en ejecución
+| docker ps -a | Lista todos los contenedores
+| docker pull | Descarga una imagen
+| docker exec | Ejecuta comandos en un contenedor
+| docker logs | Muestra los logs de un contenedor
+| docker stop | Detiene un contenedor
+| docker start | Inicia un contenedor detenido
+| docker rm | Elimina un contenedor
+| docker rmi | Elimina una imagen
+| docker images | Lista imágenes locales
+| docker inspect | Inspecciona detalles de un contenedor/imagen
+|===
+
+==== Buenas prácticas
+
+- Asigna nombres descriptivos a tus contenedores.
+- Usa `docker ps -a` para limpiar contenedores detenidos.
+- Elimina imágenes y contenedores que no uses para ahorrar espacio.
+- Utiliza logs y exec para depurar tus aplicaciones dentro de los contenedores.
+
+==== Ejemplo de ciclo completo
+
+[source,sh]
+----
+# Descargar una imagen
+docker pull nginx
+
+# Crear y ejecutar un contenedor
+docker run -d --name webtest -p 8080:80 nginx
+
+# Ver contenedores en ejecución
+docker ps
+
+# Acceder al contenedor
+docker exec -it webtest bash
+
+# Ver logs
+docker logs webtest
+
+# Detener y eliminar el contenedor
+docker stop webtest
+docker rm webtest
+----
+
+=== Depuración y solución de problemas
+
+La depuración y solución de problemas en Docker es fundamental para mantener entornos estables y aplicaciones funcionales. A continuación se presentan técnicas, comandos y buenas prácticas para identificar y resolver incidencias en contenedores, imágenes y el propio entorno Docker.
+
+==== Inspección de contenedores y logs
+
+===== Ver logs de un contenedor
+
+El comando `docker logs` permite visualizar la salida estándar y de error de un contenedor, lo que es esencial para detectar fallos en la aplicación.
+
+[source,sh]
+----
+docker logs <nombre_o_id_contenedor>
+docker logs -f <nombre_o_id_contenedor>      # Sigue los logs en tiempo real
+docker logs --tail 100 <nombre_o_id_contenedor>  # Últimas 100 líneas
+----
+
+===== Inspeccionar detalles de un contenedor
+
+`docker inspect` muestra información detallada sobre la configuración, red, volúmenes y estado de un contenedor.
+
+[source,sh]
+----
+docker inspect <nombre_o_id_contenedor>
+----
+
+Puedes filtrar información específica usando `--format`:
+
+[source,sh]
+----
+docker inspect --format='{{.State.Status}}' <nombre_o_id_contenedor>
+----
+
+==== Acceso interactivo y ejecución de comandos
+
+Si necesitas investigar el estado interno de un contenedor, puedes acceder a su shell:
+
+[source,sh]
+----
+docker exec -it <nombre_o_id_contenedor> bash
+# Si bash no está disponible:
+docker exec -it <nombre_o_id_contenedor> sh
+----
+
+Esto permite revisar archivos de configuración, logs internos, procesos en ejecución, etc.
+
+==== Monitorización de recursos
+
+Docker ofrece herramientas para monitorizar el uso de CPU, memoria y red de los contenedores:
+
+[source,sh]
+----
+docker stats
+----
+
+Esto ayuda a identificar cuellos de botella o fugas de memoria.
+
+==== Diagnóstico de redes y conectividad
+
+===== Listar redes y comprobar conexiones
+
+[source,sh]
+----
+docker network ls
+docker network inspect <nombre_red>
+----
+
+===== Probar conectividad entre contenedores
+
+Puedes usar utilidades como `ping` o `curl` dentro de los contenedores para verificar la comunicación:
+
+[source,sh]
+----
+docker exec -it <contenedor1> ping <contenedor2>
+docker exec -it <contenedor1> curl http://<contenedor2>:<puerto>
+----
+
+==== Solución de problemas comunes
+
+===== El contenedor se detiene inmediatamente
+
+- Revisa los logs (`docker logs`).
+- Verifica el comando de inicio en el Dockerfile o la configuración.
+- Comprueba si faltan variables de entorno o archivos de configuración.
+
+===== Problemas de permisos
+
+- Asegúrate de que los volúmenes montados tengan los permisos adecuados.
+- Usa `docker exec` para inspeccionar permisos dentro del contenedor.
+
+===== Problemas de red
+
+- Verifica que los puertos estén correctamente mapeados (`-p`).
+- Comprueba las reglas de firewall del host.
+- Usa `docker network inspect` para ver la configuración de red.
+
+===== Problemas con imágenes
+
+- Si una imagen no se descarga, verifica la conexión a Internet y el nombre de la imagen.
+- Usa `docker pull` para forzar la descarga.
+
+.Si hay problemas de espacio, limpia imágenes y contenedores no usados:
+[source,sh]
+----
+docker system prune -a
+----
+
+==== Herramientas avanzadas de depuración
+
+.**docker events**: Muestra eventos en tiempo real del daemon Docker.
+[source,sh]
+----
+docker events
+----
+
+.**docker top**: Muestra los procesos activos dentro de un contenedor.
+[source,sh]
+----
+docker top <nombre_o_id_contenedor>
+----
+
+.**docker diff**: Muestra los cambios en el sistema de archivos de un contenedor respecto a su imagen base.
+[source,sh]
+----
+docker diff <nombre_o_id_contenedor>
+----
+
+==== Ejemplo práctico de depuración
+
+.Supón que tu contenedor web no responde:
+[source,sh]
+----
+# 1. Verifica si está en ejecución
+docker ps
+
+# 2. Consulta los logs
+docker logs webserver
+
+# 3. Accede al contenedor para investigar
+docker exec -it webserver bash
+
+# 4. Comprueba el uso de recursos
+docker stats
+
+# 5. Revisa la configuración de red
+docker inspect webserver
+----
+
+==== Buenas prácticas para evitar y resolver problemas
+
+- Usa imágenes oficiales y mantenidas.
+- Mantén Docker y tus imágenes actualizadas.
+- Elimina recursos no utilizados regularmente (`docker system prune`).
+- Documenta la configuración y dependencias de tus contenedores.
+- Automatiza pruebas y despliegues para detectar errores temprano.
+
+==== Recursos adicionales
+
+- Documentación oficial: https://docs.docker.com/config/containers/troubleshoot/
+- Comando de ayuda: `docker <comando> --help`
+- Comunidad y foros: https://forums.docker.com/
+
+
+== Creación de Imágenes Docker
+
+En este enderás a crear tus propias imágenes Docker de forma didáctica y estructurada. Se explican los conceptos clave, las instrucciones más importantes del Dockerfile, buenas prácticas y ejemplos prácticos para que puedas construir imágenes eficientes y seguras.
+
+=== Introducción a Dockerfile
+
+Un Dockerfile es un archivo de texto que contiene una serie de instrucciones que Docker utiliza para construir una imagen personalizada. Cada instrucción en el Dockerfile crea una nueva capa en la imagen, permitiendo la reutilización y eficiencia en el almacenamiento y la transferencia.
+
+==== ¿Por qué usar Dockerfile?
+
+- Permite automatizar la creación de imágenes, asegurando entornos reproducibles.
+- Facilita la integración continua y el despliegue automático.
+- Mejora la portabilidad y la colaboración entre equipos.
+
+==== Estructura básica de un Dockerfile
+
+.Un Dockerfile se compone de instrucciones escritas en mayúsculas, cada una con un propósito específico. Las más comunes son:
+- `FROM`: Define la imagen base.
+- `RUN`: Ejecuta comandos en la imagen durante el build.
+- `COPY` y `ADD`: Copian archivos/directorios al sistema de archivos de la imagen.
+- `WORKDIR`: Establece el directorio de trabajo.
+- `ENV`: Define variables de entorno.
+- `EXPOSE`: Documenta el puerto que usará la aplicación.
+- `CMD` y `ENTRYPOINT`: Definen el comando que se ejecutará al iniciar el contenedor.
+
+==== Ejemplo sencillo de Dockerfile
+
+.A continuación, un ejemplo de Dockerfile para una aplicación Python:
+[source,dockerfile]
+----
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+----
+
+==== Proceso de construcción de una imagen
+
+1. Crea un archivo llamado `Dockerfile` en el directorio raíz de tu proyecto.
+2. Escribe las instrucciones necesarias según tu aplicación.
+
+.Construye la imagen con el comando:
+[source,sh]
+----
+docker build -t miapp:1.0 .
+----
+
+.Ejecuta un contenedor basado en tu imagen:
+[source,sh]
+----
+docker run -d --name miapp -p 5000:5000 miapp:1.0
+----
+
+==== Buenas prácticas iniciales
+
+- Mantén el Dockerfile simple y ordenado.
+- Usa imágenes base ligeras (como `alpine` o `slim`) para reducir el tamaño.
+- Agrupa las instrucciones `RUN` para minimizar el número de capas.
+- Usa `COPY` en lugar de `ADD` a menos que necesites la funcionalidad adicional de `ADD`.
+- Usa `WORKDIR` para establecer el directorio de trabajo en lugar de usar rutas absolutas.
+- Define variables de entorno con `ENV` para facilitar la configuración.
+- Usa `EXPOSE` para documentar los puertos que tu aplicación usará, aunque no es obligatorio.
+- Usa `CMD` para definir el comando por defecto, pero permite que se sobrescriba al ejecutar el contenedor.
+- Usa `ENTRYPOINT` para definir el comando principal que no debe ser sobrescrito.
+- Usa `--no-cache-dir` al instalar dependencias para evitar almacenar caché innecesario.
+- Mantén el Dockerfile en el control de versiones junto con tu código fuente.
+- Usa etiquetas (`tags`) para versionar tus imágenes y facilitar la gestión de cambios.
+- No incluyas archivos sensibles o secretos en la imagen.
+
+=== Instrucciones básicas
+
+Las instrucciones del Dockerfile definen cómo se construye una imagen Docker. Cada instrucción genera una nueva capa, por lo que su uso eficiente es clave para crear imágenes ligeras, seguras y fáciles de mantener. A continuación se explican las instrucciones más importantes, su sintaxis y ejemplos prácticos.
+
+==== FROM
+
+Especifica la imagen base sobre la que se construirá la nueva imagen. Es la primera instrucción obligatoria en cualquier Dockerfile.
+
+[source,dockerfile]
+----
+FROM ubuntu:22.04
+----
+
+Puedes usar imágenes oficiales o personalizadas. También puedes construir imágenes multietapa usando varias instrucciones FROM.
+
+==== RUN
+
+Ejecuta comandos en la imagen durante el proceso de construcción. Es útil para instalar paquetes, actualizar el sistema o preparar el entorno.
+
+[source,dockerfile]
+----
+RUN apt-get update && apt-get install -y nginx
+----
+
+Para reducir el número de capas, agrupa varios comandos en una sola instrucción RUN usando `&&`.
+
+==== COPY
+
+Copia archivos o directorios desde el contexto de construcción (tu máquina) al sistema de archivos de la imagen.
+
+[source,dockerfile]
+----
+COPY index.html /usr/share/nginx/html/
+COPY src/ /app/
+----
+
+Es preferible a ADD cuando solo necesitas copiar archivos.
+
+==== ADD
+
+Similar a COPY, pero con funcionalidades adicionales:
+- Permite descomprimir archivos `.tar` automáticamente.
+- Puede descargar archivos desde URLs (no recomendado por seguridad y reproducibilidad).
+
+[source,dockerfile]
+----
+ADD archivo.tar.gz /app/
+ADD https://ejemplo.com/archivo.txt /tmp/
+----
+
+Usa COPY salvo que necesites estas características extra.
+
+==== WORKDIR
+
+Establece el directorio de trabajo para las siguientes instrucciones RUN, CMD, ENTRYPOINT, COPY y ADD.
+
+[source,dockerfile]
+----
+WORKDIR /app
+----
+
+Evita el uso de rutas absolutas repetidas y mejora la legibilidad.
+
+==== ENV
+
+Define variables de entorno dentro de la imagen, accesibles por la aplicación y durante el build.
+
+[source,dockerfile]
+----
+ENV PORT=8080
+ENV NODE_ENV=production
+----
+
+==== EXPOSE
+
+Documenta el puerto que la aplicación usará. No publica el puerto, solo lo deja registrado en la imagen.
+
+[source,dockerfile]
+----
+EXPOSE 80
+----
+
+==== CMD
+
+Define el comando por defecto que se ejecutará al iniciar el contenedor. Puede ser sobrescrito al ejecutar `docker run`.
+
+[source,dockerfile]
+----
+CMD ["nginx", "-g", "daemon off;"]
+----
+
+Solo puede haber una instrucción CMD; si hay varias, se usará la última.
+
+==== ENTRYPOINT
+
+Establece el proceso principal del contenedor. A diferencia de CMD, no suele ser sobrescrito por `docker run`.
+
+[source,dockerfile]
+----
+ENTRYPOINT ["python", "app.py"]
+----
+
+Puedes combinar ENTRYPOINT y CMD para permitir argumentos por defecto y personalizados.
+
+==== USER
+
+Define el usuario con el que se ejecutarán las siguientes instrucciones y el proceso principal del contenedor.
+
+[source,dockerfile]
+----
+USER appuser
+----
+
+==== LABEL
+
+Permite añadir metadatos a la imagen, como el autor, versión o descripción.
+
+[source,dockerfile]
+----
+LABEL maintainer="tuemail@ejemplo.com"
+LABEL version="1.0"
+----
+
+==== Ejemplo completo de Dockerfile
+
+[source,dockerfile]
+----
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --production
+COPY . .
+ENV NODE_ENV=production
+EXPOSE 3000
+USER node
+CMD ["node", "index.js"]
+----
+
+==== Resumen
+
+- Usa FROM para definir la base.
+- RUN para instalar y configurar.
+- COPY/ADD para añadir archivos.
+- WORKDIR y ENV para configurar el entorno.
+- EXPOSE, CMD y ENTRYPOINT para definir el comportamiento del contenedor.
+- USER y LABEL para seguridad y metadatos.
+
+=== Buenas prácticas en la creación de imágenes
+
+Aplicar buenas prácticas al crear imágenes Docker es fundamental para obtener imágenes más seguras, ligeras, eficientes y fáciles de mantener. A continuación se presentan recomendaciones didácticas, estructuradas y acompañadas de ejemplos.
+
+==== Usa imágenes base oficiales y ligeras
+
+Prefiere imágenes oficiales y versiones "slim" o "alpine" cuando sea posible, ya que ocupan menos espacio y reducen la superficie de ataque.
+
+.Ejemplo de imagen base oficial y ligera:
+[source,dockerfile]
+----
+FROM python:3.11-slim
+# o
+FROM node:20-alpine
+----
+
+==== Minimiza el número de capas
+
+Cada instrucción en el Dockerfile crea una capa. Agrupa comandos relacionados en una sola instrucción RUN usando `&&` para reducir el número de capas.
+
+.Ejemplo de agrupación de comandos:
+[source,dockerfile]
+----
+RUN apt-get update && \
+    apt-get install -y nginx curl && \
+    rm -rf /var/lib/apt/lists/*
+----
+
+==== Elimina archivos temporales y cachés
+
+Limpia archivos temporales y cachés de instalación para reducir el tamaño de la imagen.
+
+.Ejemplo de limpieza de caché de pip:
+[source,dockerfile]
+----
+RUN pip install --no-cache-dir -r requirements.txt
+----
+
+==== Usa COPY en lugar de ADD
+
+Utiliza `COPY` para copiar archivos locales y reserva `ADD` solo para casos donde necesites descomprimir archivos `.tar` o descargar desde una URL.
+
+.Ejemplo de uso de COPY:
+[source,dockerfile]
+----
+COPY . /app/
+----
+
+==== Define variables de entorno y puertos explícitamente
+
+Utiliza `ENV` y `EXPOSE` para documentar la configuración y los puertos que usará tu aplicación.
+
+.Ejemplo de definición de variables de entorno y puertos:
+[source,dockerfile]
+----
+ENV NODE_ENV=production
+EXPOSE 3000
+----
+
+==== No incluyas secretos ni archivos sensibles
+
+Nunca añadas contraseñas, claves privadas o archivos sensibles en la imagen. Usa variables de entorno o sistemas de gestión de secretos externos.
+
+==== Usa usuarios no privilegiados
+
+Evita ejecutar aplicaciones como root. Crea y usa un usuario específico para tu aplicación.
+
+.Ejemplo de creación de un usuario no privilegiado:
+[source,dockerfile]
+----
+RUN useradd -m appuser
+USER appuser
+----
+
+==== Mantén el Dockerfile limpio y ordenado
+
+Comenta las secciones importantes y elimina instrucciones innecesarias. Mantén el archivo bajo control de versiones junto con tu código fuente.
+
+==== Versiona tus imágenes
+
+Utiliza etiquetas (`tags`) para identificar versiones específicas de tus imágenes y facilitar la gestión de despliegues.
+
+.Ejemplo de etiquetado:
+[source,sh]
+----
+docker build -t miapp:1.0 .
+----
+
+==== Usa archivos .dockerignore
+
+Incluye un archivo `.dockerignore` para excluir archivos y carpetas innecesarias del contexto de build, como logs, archivos temporales y dependencias locales.
+
+.Ejemplo de .dockerignore:
+[source]
+----
+*.pyc
+__pycache__/
+node_modules/
+.git/
+Dockerfile
+.dockerignore
+----
+
+==== 11. Actualiza y revisa tus imágenes regularmente
+
+Mantén tus imágenes y dependencias actualizadas para evitar vulnerabilidades de seguridad.
+
+==== 12. Ejemplo de Dockerfile siguiendo buenas prácticas
+
+[source,dockerfile]
+----
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+USER node
+CMD ["node", "index.js"]
+----
+
+=== Optimización de imágenes: tamaño y capas
+
+Optimizar el tamaño y la estructura de capas de una imagen Docker es esencial para mejorar la eficiencia, reducir tiempos de descarga y despliegue, y minimizar vulnerabilidades. A continuación se presentan estrategias didácticas y ejemplos prácticos para lograr imágenes más ligeras y eficientes.
+
+==== Usa imágenes base minimalistas
+
+.Prioriza imágenes como `alpine` o versiones `slim` de los lenguajes y sistemas operativos.
+[source,dockerfile]
+----
+FROM python:3.11-alpine
+# o
+FROM node:20-slim
+----
+
+==== Agrupa comandos en una sola instrucción RUN
+
+Cada instrucción RUN crea una capa. Agrupa comandos relacionados usando `&&` para reducir el número de capas y limpiar archivos temporales en el mismo paso.
+
+.Ejemplo de agrupación de comandos:
+[source,dockerfile]
+----
+RUN apt-get update && \
+    apt-get install -y build-essential curl && \
+    rm -rf /var/lib/apt/lists/*
+----
+
+==== Elimina archivos innecesarios y cachés
+
+Borra archivos temporales, cachés de paquetes y dependencias de desarrollo tras la instalación.
+
+.Ejemplo de limpieza de caché de pip:
+[source,dockerfile]
+----
+RUN pip install --no-cache-dir -r requirements.txt
+----
+
+==== Usa archivos .dockerignore
+
+Incluye un archivo `.dockerignore` para evitar copiar archivos y carpetas innecesarias al contexto de build, como dependencias locales, archivos temporales y carpetas de control de versiones.
+
+.Ejemplo de .dockerignore:
+[source]
+----
+*.log
+node_modules/
+.git/
+tests/
+Dockerfile
+.dockerignore
+----
+
+==== Copia solo lo necesario
+
+Evita copiar todo el proyecto si solo necesitas algunos archivos para construir la imagen.
+
+[source,dockerfile]
+----
+COPY src/ /app/src/
+COPY package.json package-lock.json /app/
+----
+
+==== Multi-stage builds (construcción multietapa)
+
+Utiliza varias etapas en el Dockerfile para compilar o construir artefactos en una imagen temporal y copiar solo el resultado final a la imagen de producción. Esto reduce drásticamente el tamaño de la imagen final.
+
+.Las imágenes multietapa permiten separar el proceso de construcción del de ejecución, eliminando dependencias y herramientas de desarrollo innecesarias en la imagen final.
+[source,dockerfile]
+----
+# Etapa de build
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Etapa de producción
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+----
+
+==== Elimina herramientas de desarrollo en producción
+
+Instala compiladores y herramientas solo en etapas de build, no en la imagen final.
+
+==== Usa imágenes oficiales y mantenidas
+
+Las imágenes oficiales suelen estar optimizadas y actualizadas, lo que ayuda a reducir el tamaño y mejorar la seguridad.
+
+==== Analiza y revisa el tamaño de tus imágenes
+
+.Utiliza comandos como `docker images` y herramientas como `dive` para inspeccionar el tamaño de cada capa y detectar archivos innecesarios.
+[source,sh]
+----
+docker images
+dive miapp:latest
+----
+
+==== Ejemplo de Dockerfile optimizado
+
+[source,dockerfile]
+----
+# Etapa de build
+FROM golang:1.22-alpine AS builder
+WORKDIR /src
+COPY . .
+RUN go build -o app
+
+# Imagen final mínima
+FROM alpine:3.19
+WORKDIR /app
+COPY --from=builder /src/app .
+EXPOSE 8080
+CMD ["./app"]
+----
+
+==== Resumen de recomendaciones
+
+- Usa imágenes base ligeras.
+- Agrupa comandos y limpia archivos temporales en la misma capa.
+- Utiliza `.dockerignore` para reducir el contexto de build.
+- Aplica multi-stage builds para separar dependencias de desarrollo y producción.
+- Analiza regularmente el tamaño y las capas de tus imágenes.
+
+=== Imágenes multietapa
+
+Las imágenes multietapa (multi-stage builds) son una técnica avanzada de Docker que permite crear imágenes más pequeñas, seguras y eficientes. Consiste en definir varias etapas en un mismo Dockerfile, utilizando diferentes imágenes base y copiando solo los artefactos necesarios a la imagen final. Esto es especialmente útil para aplicaciones que requieren compilación o construcción previa, ya que evita incluir herramientas y dependencias de desarrollo en la imagen de producción.
+
+==== Ventajas de las imágenes multietapa
+
+- Reducción significativa del tamaño de la imagen final.
+- Mayor seguridad: solo se incluyen los archivos y binarios necesarios para ejecutar la aplicación.
+- Facilita la gestión de dependencias y la separación entre entornos de build y producción.
+- Permite reutilizar etapas para diferentes propósitos (test, build, producción).
+
+==== Sintaxis y funcionamiento
+
+Cada etapa comienza con una instrucción `FROM`. Puedes asignar un alias a cada etapa usando `AS nombre`, lo que facilita copiar archivos entre etapas.
+
+.Las etapas se definen de la siguiente manera:
+[source,dockerfile]
+----
+# Etapa de compilación
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Etapa de producción
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+----
+
+En este ejemplo:
+- La primera etapa (`build`) instala dependencias y construye la aplicación.
+- La segunda etapa parte de una imagen mínima (`nginx:alpine`) y solo copia los archivos generados en la etapa anterior.
+
+==== Ejemplo práctico: aplicación Go
+
+[source,dockerfile]
+----
+# Etapa de build
+FROM golang:1.22-alpine AS builder
+WORKDIR /src
+COPY . .
+RUN go build -o app
+
+# Imagen final mínima
+FROM alpine:3.19
+WORKDIR /app
+COPY --from=builder /src/app .
+EXPOSE 8080
+CMD ["./app"]
+----
+
+==== Multi-stage para eliminar dependencias de desarrollo
+
+.Puedes usar tantas etapas como necesites, por ejemplo, para ejecutar tests antes de construir la imagen final:
+[source,dockerfile]
+----
+# Etapa de test
+FROM node:20-alpine AS test
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm test
+
+# Etapa de build
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=test /app .
+RUN npm run build
+
+# Etapa de producción
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+----
+
+==== Buenas prácticas con imágenes multietapa
+
+- Utiliza nombres descriptivos para las etapas (`AS build`, `AS test`, `AS prod`).
+- Copia solo los artefactos necesarios a la imagen final.
+- Elimina archivos temporales y dependencias de desarrollo en las etapas intermedias.
+- Usa imágenes base ligeras en la etapa final.
+
+=== Publicación de imágenes en Docker Hub
+
+Publicar imágenes en Docker Hub te permite compartir tus aplicaciones y entornos con otros usuarios o equipos, facilitando el despliegue y la colaboración. Docker Hub es el registro público más popular, aunque también existen registros privados y alternativos.
+
+==== Crear una cuenta en Docker Hub
+
+1. Accede a https://hub.docker.com/ y regístrate gratuitamente.
+2. Elige un nombre de usuario único; este será el prefijo de tus imágenes (por ejemplo, `usuario/miimagen`).
+
+==== Iniciar sesión desde la terminal
+
+.Antes de publicar, debes autenticarte en Docker Hub desde tu terminal:
+[source,sh]
+----
+docker login
+----
+
+Introduce tu usuario y contraseña cuando se solicite.
+
+==== Etiquetar la imagen para Docker Hub
+
+.Las imágenes deben tener el formato `usuario/imagen:tag`. Puedes etiquetar una imagen existente con:
+[source,sh]
+----
+docker tag miapp:1.0 usuario/miapp:1.0
+----
+
+Reemplaza `usuario` por tu nombre de usuario de Docker Hub.
+
+==== Subir la imagen al registro
+
+.Utiliza el comando `push` para publicar la imagen:
+[source,sh]
+----
+docker push usuario/miapp:1.0
+----
+
+Docker subirá todas las capas de la imagen a tu repositorio en Docker Hub.
+
+==== Verificar la publicación
+
+Accede a tu cuenta en https://hub.docker.com/ y verifica que la imagen aparece en tu repositorio. Puedes ver detalles como el número de descargas, etiquetas y capas.
+
+== Redes en Docker
+
+En este enderás cómo Docker gestiona las redes y la comunicación entre contenedores, así como las mejores prácticas para exponer servicios y crear redes personalizadas. El dominio de las redes en Docker es esencial para diseñar arquitecturas seguras, escalables y eficientes.
+
+=== Tipos de redes en Docker
+
+Docker proporciona varios tipos de redes para conectar contenedores entre sí y con el exterior. 
+.Cada tipo de red tiene características y casos de uso específicos:
+- **bridge**: Red por defecto para contenedores en un solo host.
+- **host**: Comparte la red del host, sin aislamiento.
+- **none**: Sin conectividad de red.
+- **overlay**: Permite la comunicación entre contenedores en diferentes hosts (ideal para clústeres).
+- **macvlan**: Asigna una dirección MAC y IP propia al contenedor, integrándolo en la red física del host.
+
+==== bridge (puente)
+
+Es la red por defecto para contenedores en un solo host. Permite la comunicación entre contenedores conectados a la misma red bridge, pero aísla los contenedores de otros hosts y redes externas (salvo que se expongan puertos).
+
+.Crear una red bridge personalizada:
+[source,sh]
+----
+docker network create mi_red_bridge
+----
+
+.Conectar un contenedor a la red bridge:
+[source,sh]
+----
+docker run -d --name app1 --network mi_red_bridge nginx
+----
+
+==== host
+
+El contenedor comparte la pila de red del host, sin aislamiento de red. Es útil para aplicaciones que requieren acceso directo a la red del host, pero reduce el aislamiento.
+
+.Crear un contenedor usando la red del host:
+[source,sh]
+----
+docker run --network host nginx
+----
+
+==== none
+
+El contenedor no tiene acceso a ninguna red. Solo es útil para casos de aislamiento extremo o pruebas.
+
+.Crear un contenedor sin red:
+[source,sh]
+----
+docker run --network none nginx
+----
+
+==== overlay
+
+Permite la comunicación entre contenedores en diferentes hosts, ideal para clústeres y orquestadores como Docker Swarm. Requiere configuración adicional y un entorno distribuido.
+
+.Crear una red overlay:
+[source,sh]
+----
+docker network create --driver overlay mi_red_overlay
+----
+
+==== macvlan
+
+Asigna una dirección MAC y una IP propia al contenedor, integrándolo directamente en la red física del host. Es útil para aplicaciones que necesitan ser vistas como dispositivos físicos en la red.
+
+.Crear una red macvlan:
+[source,sh]
+----
+docker network create -d macvlan \
+  --subnet=192.168.1.0/24 \
+  --gateway=192.168.1.1 \
+  -o parent=eth0 mi_red_macvlan
+----
+
+==== Resumen comparativo
+
+[cols="1,3",options="header"]
+|===
+| Tipo de red | Características principales
+| bridge      | Por defecto, comunicación entre contenedores en el mismo host
+| host        | Sin aislamiento, acceso directo a la red del host
+| none        | Sin conectividad de red
+| overlay     | Comunicación entre hosts (Swarm, clúster)
+| macvlan     | IP/MAC propia en la red física
+|===
+
+=== Comunicación entre contenedores
+
+La comunicación entre contenedores es esencial para construir aplicaciones distribuidas y sistemas de microservicios. Docker facilita esta comunicación mediante redes virtuales, permitiendo que los contenedores se descubran y se comuniquen de forma segura y eficiente.
+
+==== Comunicación en la red bridge (por defecto)
+
+Cuando varios contenedores están conectados a la misma red bridge (la red por defecto o una personalizada), pueden comunicarse entre sí usando el nombre del contenedor como hostname.
+
+.Crear una red bridge personalizada y conectar contenedores:
+[source,sh]
+----
+docker network create mi_red_bridge
+docker run -d --name app1 --network mi_red_bridge nginx
+docker run -d --name app2 --network mi_red_bridge alpine sleep infinity
+----
+
+.Comprobar la conectividad desde app2 a app1 usando ping:
+[source,sh]
+----
+docker exec -it app2 ping -c 3 app1
+----
+
+==== Comunicación usando nombres de contenedor
+
+.Docker añade automáticamente los nombres de los contenedores al DNS interno de la red. Así, puedes acceder a servicios usando el nombre del contenedor:
+
+[source,sh]
+----
+# Desde app2, acceder al puerto 80 de app1 (nginx)
+docker exec -it app2 apk add --no-cache curl
+docker exec -it app2 curl http://app1:80
+----
+
+==== Comunicación entre redes diferentes
+
+.Por defecto, los contenedores en diferentes redes no pueden comunicarse. Para permitirlo, debes conectar el contenedor a varias redes:
+
+[source,sh]
+----
+docker network create red1
+docker network create red2
+docker run -d --name multiapp --network red1 alpine sleep infinity
+docker network connect red2 multiapp
+----
+
+Ahora, `multiapp` puede comunicarse con contenedores en ambas redes.
+
+==== Exposición de servicios al exterior
+
+.Para que un contenedor sea accesible desde fuera del host Docker, debes mapear puertos con la opción `-p`:
+
+[source,sh]
+----
+docker run -d --name web -p 8080:80 nginx
+----
+
+Esto permite acceder a nginx en el puerto 8080 del host.
+
+==== Buenas prácticas
+
+- Usa redes personalizadas para aislar y organizar servicios.
+- Utiliza nombres de contenedor para facilitar la comunicación y el descubrimiento de servicios.
+- Limita la exposición de puertos solo a los servicios que realmente deban ser accesibles desde fuera.
+- Documenta la topología de red de tus aplicaciones multicontenedor.
+
+=== Exposición y mapeo de puertos
+
+Exponer y mapear puertos es fundamental para que los servicios que corren dentro de los contenedores Docker sean accesibles desde el host o desde redes externas. Docker proporciona varias formas de controlar cómo se exponen los puertos y cómo se enruta el tráfico hacia los contenedores.
+
+==== Exponer puertos en el Dockerfile
+
+La instrucción `EXPOSE` en el Dockerfile documenta qué puertos utiliza la aplicación dentro del contenedor. No publica el puerto automáticamente, pero sirve como referencia para usuarios y herramientas.
+
+[source,dockerfile]
+----
+EXPOSE 80
+EXPOSE 443
+----
+
+==== Mapeo de puertos al ejecutar un contenedor
+
+Para hacer accesible un puerto del contenedor desde el host, utiliza la opción `-p` o `--publish` al ejecutar `docker run`:
+
+[source,sh]
+----
+docker run -d --name web -p 8080:80 nginx
+----
+
+Esto mapea el puerto 80 del contenedor al puerto 8080 del host. Ahora puedes acceder a nginx en `http://localhost:8080`.
+
+- Sintaxis general: `-p <puerto_host>:<puerto_contenedor>`
+- Puedes mapear varios puertos repitiendo la opción `-p`.
+
+[source,sh]
+----
+docker run -d -p 8080:80 -p 8443:443 nginx
+----
+
+==== Mapeo de puertos en modo aleatorio
+
+.Si solo especificas el puerto del contenedor, Docker asigna un puerto aleatorio del host:
+
+[source,sh]
+----
+docker run -d -p 80 nginx
+----
+
+.Consulta el puerto asignado con:
+
+[source,sh]
+----
+docker port <nombre_o_id_contenedor>
+----
+
+==== Mapeo de puertos en interfaces específicas
+
+.Puedes limitar la exposición a una interfaz de red específica del host:
+
+[source,sh]
+----
+docker run -d -p 127.0.0.1:8080:80 nginx
+----
+
+Esto hace que el servicio solo sea accesible desde localhost.
+
+==== Ejemplo práctico
+
+[source,sh]
+----
+# Ejecutar un contenedor de nginx accesible en el puerto 8080 del host
+docker run -d --name miweb -p 8080:80 nginx
+
+# Verificar los puertos mapeados
+docker ps
+
+# Acceder al servicio desde el navegador o curl
+curl http://localhost:8080
+----
+
+==== Buenas prácticas
+
+- Expón solo los puertos necesarios para reducir la superficie de ataque.
+- Usa interfaces específicas para limitar el acceso externo si es necesario.
+- Documenta los puertos expuestos en el Dockerfile y en la documentación del proyecto.
+- En entornos de producción, utiliza un proxy inverso o balanceador de carga para gestionar el acceso a los servicios.
+
+=== DNS y nombres de host
+
+Docker proporciona un sistema de resolución de nombres (DNS interno) que facilita la comunicación entre contenedores dentro de la misma red. Esto permite que los contenedores se descubran y se conecten usando nombres lógicos en lugar de direcciones IP, lo que mejora la portabilidad y la flexibilidad de las aplicaciones.
+
+==== Resolución automática de nombres
+
+Cuando creas contenedores en una red bridge personalizada o en una red overlay, Docker añade automáticamente los nombres de los contenedores al DNS interno de esa red. Así, puedes acceder a un contenedor usando su nombre como hostname.
+
+.Ejemplo:
+[source,sh]
+----
+docker network create mi_red
+docker run -d --name web --network mi_red nginx
+docker run -d --name cliente --network mi_red alpine sleep infinity
+docker exec -it cliente ping -c 3 web
+----
+
+En este ejemplo, el contenedor `cliente` puede resolver el nombre `web` y comunicarse con él sin necesidad de conocer su IP.
+
+==== Alias de red
+
+.Puedes asignar alias adicionales a un contenedor dentro de una red, facilitando el acceso con diferentes nombres.
+[source,sh]
+----
+docker run -d --name app --network mi_red --network-alias servicio nginx
+docker exec -it cliente ping servicio
+----
+
+==== Personalización del hostname
+
+Puedes definir el hostname de un contenedor usando la opción `--hostname` al crear el contenedor.
+
+.Esto es útil para aplicaciones que dependen de un nombre de host específico o para facilitar la identificación de contenedores en la red.
+[source,sh]
+----
+docker run -d --name db --hostname basededatos --network mi_red mysql
+----
+
+Dentro de ese contenedor, el hostname será `basededatos`.
+
+==== Modificación del archivo /etc/hosts
+
+Docker permite añadir entradas personalizadas al archivo `/etc/hosts` del contenedor usando la opción `--add-host`.
+
+.Esto es útil para resolver nombres de host específicos a direcciones IP concretas.
+[source,sh]
+----
+docker run -d --name app --add-host api.local:172.18.0.10 nginx
+----
+
+Esto añade la línea `172.18.0.10 api.local` al `/etc/hosts` del contenedor.
+
+==== Descubrimiento de servicios en redes overlay
+
+En redes overlay (usadas en Docker Swarm), el DNS interno permite descubrir servicios por nombre de servicio, facilitando el balanceo de carga y la alta disponibilidad.
+
+.Por ejemplo, si tienes un servicio llamado `web` en una red overlay, puedes acceder a él desde otros servicios usando el nombre `web`.
+[source,sh]
+----
+docker service create --name web --network mi_overlay nginx
+docker service create --name cliente --network mi_overlay alpine sleep infinity
+docker exec -it $(docker ps -q -f name=cliente) ping web
+----
+
+==== Buenas prácticas
+
+- Usa nombres descriptivos y consistentes para los contenedores y servicios.
+- Prefiere redes personalizadas para aprovechar el DNS interno de Docker.
+- Utiliza alias de red para facilitar migraciones o cambios de arquitectura.
+- Documenta los nombres y alias utilizados en la arquitectura de tu aplicación.
+
+=== Creación y gestión de redes personalizadas
+
+Docker permite crear redes personalizadas para aislar, organizar y controlar la comunicación entre contenedores. Las redes personalizadas ofrecen ventajas como el aislamiento, la facilidad de descubrimiento de servicios y la configuración avanzada de topologías de red.
+
+==== ¿Por qué usar redes personalizadas?
+
+- Aislamiento entre aplicaciones o entornos (desarrollo, pruebas, producción).
+- Control granular sobre la comunicación entre contenedores.
+- Facilita el uso de DNS interno y alias de red.
+- Permite definir políticas de red y opciones avanzadas.
+
+==== Crear una red personalizada
+
+.Puedes crear una red bridge personalizada (la más común para un solo host) con:
+[source,sh]
+----
+docker network create mi_red_personalizada
+----
+
+.Para ver todas las redes disponibles:
+[source,sh]
+----
+docker network ls
+----
+
+==== Conectar contenedores a una red personalizada
+
+.Al crear un contenedor, usa la opción `--network` para conectarlo a una red específica:
+[source,sh]
+----
+docker run -d --name app1 --network mi_red_personalizada nginx
+docker run -d --name app2 --network mi_red_personalizada alpine sleep infinity
+----
+
+Ahora, `app1` y `app2` pueden comunicarse usando sus nombres como hostname.
+
+==== Conectar un contenedor existente a otra red
+
+.Puedes conectar un contenedor ya creado a una red adicional:
+[source,sh]
+----
+docker network connect mi_red_personalizada app2
+----
+
+==== Inspeccionar y gestionar redes
+
+.Para ver los detalles y configuración de una red:
+[source,sh]
+----
+docker network inspect mi_red_personalizada
+----
+
+.Para desconectar un contenedor de una red:
+[source,sh]
+----
+docker network disconnect mi_red_personalizada app2
+----
+
+==== Eliminar una red personalizada
+
+.Solo puedes eliminar una red si no tiene contenedores conectados:
+[source,sh]
+----
+docker network rm mi_red_personalizada
+----
+
+==== Ejemplo práctico completo
+
+[source,sh]
+----
+# Crear una red personalizada
+docker network create mi_red
+
+# Crear dos contenedores en esa red
+docker run -d --name web --network mi_red nginx
+docker run -d --name cliente --network mi_red alpine sleep infinity
+
+# Comprobar conectividad
+docker exec -it cliente ping -c 3 web
+----
+
+==== Redes avanzadas: overlay y macvlan
+
+- Para clústeres y comunicación entre hosts, usa redes `overlay` (requiere Docker Swarm).
+- Para integración directa con la red física, usa `macvlan`.
+
+==== Buenas prácticas
+
+- Usa redes personalizadas para aislar aplicaciones y entornos.
+- Asigna nombres descriptivos a las redes.
+- Documenta la topología de red de tus aplicaciones.
+- Elimina redes que ya no utilices para mantener el entorno limpio.
+
+== Persistencia de Datos
+
+La persistencia de datos es fundamental en Docker, ya que por defecto los datos generados dentro de un contenedor se pierden al eliminarlo. Para garantizar que la información sobreviva al ciclo de vida de los contenedores, Docker ofrece varias soluciones: volúmenes, montajes de enlace (bind mounts) y estrategias de backup. En este enderás a gestionar datos de forma segura y eficiente.
+
+=== Volúmenes Docker
+
+Los volúmenes son la forma recomendada por Docker para gestionar la persistencia de datos fuera del ciclo de vida de los contenedores. Un volumen es un área gestionada por Docker en el sistema de archivos del host, independiente de cualquier contenedor específico.
+
+==== ¿Por qué usar volúmenes?
+
+- Los datos almacenados en volúmenes persisten aunque el contenedor se elimine o recree.
+- Permiten compartir datos entre varios contenedores.
+- Facilitan la realización de backups y restauraciones.
+- Mejoran el rendimiento y la seguridad frente a los bind mounts tradicionales.
+
+==== Crear y gestionar volúmenes
+
+.Crear un volumen:
+[source,sh]
+----
+docker volume create datos_app
+----
+
+.Listar volúmenes existentes:
+[source,sh]
+----
+docker volume ls
+----
+
+.Inspeccionar detalles de un volumen:
+[source,sh]
+----
+docker volume inspect datos_app
+----
+
+.Eliminar un volumen (debe estar sin uso):
+[source,sh]
+----
+docker volume rm datos_app
+----
+
+==== Usar volúmenes en contenedores
+
+.Montar un volumen en un contenedor:
+[source,sh]
+----
+docker run -d --name app -v datos_app:/var/lib/appdata myimage
+----
+
+En este ejemplo, todo lo que la aplicación escriba en `/var/lib/appdata` se almacenará en el volumen `datos_app` y persistirá aunque el contenedor se elimine.
+
+.Montar un volumen en modo solo lectura:
+[source,sh]
+----
+docker run -d -v datos_app:/datos:ro myimage
+----
+
+==== Compartir volúmenes entre contenedores
+
+.Puedes montar el mismo volumen en varios contenedores para compartir datos:
+[source,sh]
+----
+docker run -d --name app1 -v datos_app:/data myimage
+docker run -d --name app2 -v datos_app:/data myimage
+----
+
+==== Ubicación de los volúmenes
+
+Por defecto, Docker almacena los volúmenes en `/var/lib/docker/volumes/` en el host, pero su gestión debe hacerse siempre con los comandos de Docker.
+
+==== Ejemplo práctico
+
+[source,sh]
+----
+# Crear un volumen
+docker volume create datos_web
+
+# Ejecutar un contenedor de nginx usando el volumen para los archivos estáticos
+docker run -d --name web -v datos_web:/usr/share/nginx/html nginx
+
+# Copiar archivos desde el host al volumen (usando un contenedor temporal)
+docker cp index.html web:/usr/share/nginx/html/index.html
+----
+
+==== Buenas prácticas
+
+- Usa volúmenes para datos que deban persistir o compartirse entre contenedores.
+- No almacenes datos importantes solo en el sistema de archivos interno del contenedor.
+- Realiza backups periódicos de los volúmenes.
+- Elimina volúmenes que ya no utilices para liberar espacio.
+
+==== Resumen
+
+Los volúmenes Docker son la solución más robusta y flexible para la persistencia de datos en entornos de contenedores, facilitando la gestión, el backup y la portabilidad de la información.
+
+=== Montajes de enlace (bind mounts)
+
+Los montajes de enlace (bind mounts) permiten montar un directorio o archivo específico del sistema de archivos del host directamente dentro de un contenedor. A diferencia de los volúmenes gestionados por Docker, los bind mounts ofrecen un control total sobre la ubicación y el contenido, lo que resulta útil para desarrollo, pruebas y casos donde se requiere acceso directo a archivos del host.
+
+==== ¿Cuándo usar bind mounts?
+
+- Cuando necesitas que los cambios en los archivos del host se reflejen inmediatamente en el contenedor (ideal para desarrollo).
+- Para compartir archivos de configuración, código fuente o datos temporales entre el host y el contenedor.
+- Cuando se requiere acceso a rutas específicas del host que no pueden gestionarse como volúmenes Docker.
+
+==== Sintaxis y uso básico
+
+La sintaxis general para usar un bind mount es:
+
+[source,sh]
+----
+docker run -d -v /ruta/del/host:/ruta/en/contenedor imagen
+----
+
+.Por ejemplo, para montar el directorio actual en `/app` dentro del contenedor:
+[source,sh]
+----
+docker run -d -v $(pwd):/app python:3.11-slim
+----
+
+==== Modo de solo lectura
+
+.Puedes montar el directorio en modo solo lectura agregando `:ro` al final:
+[source,sh]
+----
+docker run -d -v /ruta/del/host:/ruta/en/contenedor:ro nginx
+----
+
+==== Ejemplo práctico
+
+.Supón que tienes un archivo `index.html` en tu máquina y quieres servirlo con nginx:
+[source,sh]
+----
+docker run -d --name web \
+  -v $(pwd)/index.html:/usr/share/nginx/html/index.html \
+  -p 8080:80 nginx
+----
+
+Cualquier cambio en `index.html` en el host se reflejará inmediatamente en el contenedor.
+
+==== Consideraciones de seguridad y permisos
+
+- El contenedor tendrá acceso a los archivos del host según los permisos del usuario que ejecuta Docker.
+- Evita montar directorios sensibles del sistema para reducir riesgos de seguridad.
+- En entornos de producción, prefiere volúmenes gestionados por Docker para mayor aislamiento y portabilidad.
+
+==== Diferencias entre bind mounts y volúmenes
+
+[cols="1,2",options="header"]
+|===
+| Bind Mounts | Volúmenes Docker
+| Montan cualquier ruta del host | Gestionados por Docker en rutas internas
+| Cambios inmediatos entre host y contenedor | Aislados del sistema de archivos del host
+| Útiles para desarrollo y pruebas | Recomendados para producción y persistencia
+| Menos portables | Más portables y fáciles de respaldar
+|===
+
+==== Buenas prácticas
+
+- Usa bind mounts para desarrollo, pruebas o integración con herramientas externas.
+- Documenta claramente las rutas montadas para evitar confusiones.
+- No montes rutas del sistema o directorios críticos del host.
+- Prefiere volúmenes para datos persistentes y en producción.
+
+=== Estrategias de backup y restauración
+
+La protección y recuperación de datos es esencial en cualquier entorno de contenedores. Docker facilita el backup y la restauración de datos principalmente a través de volúmenes y bind mounts. A continuación se presentan estrategias didácticas y ejemplos prácticos para realizar copias de seguridad y restaurar datos de manera segura y eficiente.
+
+==== Backup y restauración de volúmenes Docker
+
+Los volúmenes son la forma recomendada de persistir datos en Docker. Puedes respaldar y restaurar su contenido fácilmente usando contenedores temporales y comandos estándar de Linux.
+
+.Backup de un volumen:
+[source,sh]
+----
+docker run --rm -v datos_app:/datos -v $(pwd):/backup alpine \
+  tar czf /backup/backup_datos_app.tar.gz -C /datos .
+----
+
+Este comando crea un archivo comprimido `backup_datos_app.tar.gz` en el directorio actual del host con todo el contenido del volumen `datos_app`.
+
+.Restauración de un volumen:
+[source,sh]
+----
+docker run --rm -v datos_app:/datos -v $(pwd):/backup alpine \
+  tar xzf /backup/backup_datos_app.tar.gz -C /datos
+----
+
+==== Backup y restauración de bind mounts
+
+Como los bind mounts son directorios o archivos del host, puedes usar cualquier herramienta de backup tradicional (rsync, cp, tar, etc.) directamente sobre la ruta del host.
+
+.Ejemplo usando tar:
+[source,sh]
+----
+tar czf backup_mis_datos.tar.gz /ruta/del/host
+# Para restaurar:
+tar xzf backup_mis_datos.tar.gz -C /ruta/del/host
+----
+
+==== Backup y restauración de bases de datos en contenedores
+
+Para bases de datos como MySQL o PostgreSQL, es recomendable usar las herramientas propias de backup (mysqldump, pg_dump) ejecutadas dentro del contenedor.
+
+.Backup de una base de datos MySQL:
+[source,sh]
+----
+docker exec mi_mysql_container \
+  mysqldump -u usuario -p'contraseña' basededatos > backup.sql
+----
+
+.Restauración:
+[source,sh]
+----
+docker exec -i mi_mysql_container \
+  mysql -u usuario -p'contraseña' basededatos < backup.sql
+----
+
+==== Automatización y buenas prácticas
+
+- Programa backups periódicos usando cron jobs en el host o contenedores dedicados.
+- Almacena los backups fuera del host Docker para mayor seguridad.
+- Verifica regularmente la integridad de los backups y realiza pruebas de restauración.
+- Documenta el procedimiento de backup y restauración para tu equipo.
+
+==== Ejemplo completo: backup y restauración de un volumen
+
+[source,sh]
+----
+# Crear un volumen y un contenedor de ejemplo
+docker volume create datos_web
+docker run -d --name web -v datos_web:/usr/share/nginx/html nginx
+
+# Backup del volumen
+docker run --rm -v datos_web:/datos -v $(pwd):/backup alpine \
+  tar czf /backup/backup_web.tar.gz -C /datos .
+
+# Restaurar el volumen en otro host o entorno
+docker volume create datos_web_restaurado
+docker run --rm -v datos_web_restaurado:/datos -v $(pwd):/backup alpine \
+  tar xzf /backup/backup_web.tar.gz -C /datos
+----
+
+==== Resumen
+
+- Utiliza volúmenes para facilitar el backup y la restauración de datos.
+- Usa herramientas estándar (tar, rsync) y contenedores temporales para manipular datos.
+- Automatiza y documenta los procesos de backup y restauración para garantizar la continuidad del negocio y la recuperación ante desastres.
+
+=== Compartir datos entre contenedores
+
+Compartir datos entre contenedores es una necesidad común en arquitecturas de microservicios y aplicaciones distribuidas. Docker facilita este intercambio principalmente a través de volúmenes, permitiendo que varios contenedores accedan y modifiquen la misma información de manera eficiente y segura.
+
+==== Compartir volúmenes entre contenedores
+
+La forma más sencilla y recomendada de compartir datos es montar el mismo volumen en varios contenedores.
+
+.Ejemplo práctico:
+[source,sh]
+----
+# Crear un volumen
+docker volume create datos_compartidos
+
+# Ejecutar el primer contenedor con el volumen
+docker run -d --name productor -v datos_compartidos:/datos busybox sh -c "while true; do date >> /datos/fechas.txt; sleep 1; done"
+
+# Ejecutar el segundo contenedor con el mismo volumen
+docker run -it --name consumidor -v datos_compartidos:/datos busybox tail -f /datos/fechas.txt
+----
+
+En este ejemplo, el contenedor `productor` escribe continuamente en un archivo dentro del volumen, y el contenedor `consumidor` puede leer esos datos en tiempo real.
+
+==== Compartir bind mounts
+
+.También puedes usar un bind mount para que varios contenedores accedan a un mismo directorio del host.
+[source,sh]
+----
+docker run -d --name app1 -v /tmp/datos:/compartido busybox
+docker run -d --name app2 -v /tmp/datos:/compartido busybox
+----
+
+Ambos contenedores verán y podrán modificar los archivos en `/tmp/datos` del host.
+
+==== Volúmenes "data-only" (contenedores de datos)
+
+Antes de Docker 1.9, era común crear contenedores dedicados solo para almacenar datos y compartirlos con otros contenedores usando la opción `--volumes-from`. Aunque hoy se prefiere usar volúmenes directamente, este método aún es válido en algunos casos.
+
+.Crear un contenedor de datos:
+[source,sh]
+----
+# Crear un contenedor de datos
+docker create -v /datos --name datos_container busybox
+
+# Montar el volumen de datos_container en otros contenedores
+docker run -d --name app1 --volumes-from datos_container busybox
+docker run -d --name app2 --volumes-from datos_container busybox
+----
+
+==== Consideraciones de concurrencia y permisos
+
+- Todos los contenedores que comparten un volumen pueden leer y escribir en él simultáneamente.
+- Es importante que las aplicaciones gestionen correctamente el acceso concurrente a los archivos para evitar corrupción de datos.
+- Los permisos de los archivos y directorios deben ser compatibles con los usuarios de todos los contenedores que acceden al volumen.
+
+==== Buenas prácticas
+
+- Prioriza usar volúmenes Docker para compartir datos entre contenedores, ya que son más portables y seguros.
+- Documenta qué contenedores comparten cada volumen y para qué propósito.
+- Si necesitas compartir datos solo en modo lectura, monta el volumen como `:ro` en los contenedores consumidores.
+- Evita compartir volúmenes entre contenedores que ejecutan aplicaciones con diferentes requisitos de seguridad o aislamiento.
+
+=== Persistencia en entornos de producción
+
+La persistencia de datos en entornos de producción requiere estrategias más robustas y seguras que en desarrollo. Es fundamental garantizar la integridad, disponibilidad y rendimiento de los datos, así como facilitar la escalabilidad y la recuperación ante fallos. A continuación se presentan recomendaciones y buenas prácticas para gestionar la persistencia en producción con Docker.
+
+==== Usa volúmenes gestionados por Docker o soluciones externas
+
+- Prefiere volúmenes Docker (`docker volume`) sobre bind mounts para mayor portabilidad y aislamiento.
+- Para aplicaciones críticas, considera soluciones de almacenamiento externas y distribuidas (NFS, GlusterFS, Ceph, Amazon EFS, Azure Files, etc.) que permitan alta disponibilidad y redundancia.
+
+==== Monta volúmenes en rutas específicas
+
+- Define rutas de montaje claras y documentadas para los datos persistentes.
+- Evita almacenar datos importantes en el sistema de archivos interno del contenedor.
+
+.Ejemplo:
+[source,sh]
+----
+docker run -d --name db \
+  -v datos_db:/var/lib/mysql \
+  mysql:8
+----
+
+==== Gestiona permisos y usuarios
+
+- Asegúrate de que los volúmenes tengan los permisos adecuados para el usuario que ejecuta la aplicación dentro del contenedor.
+- Evita ejecutar aplicaciones como root; usa usuarios específicos para cada servicio.
+
+==== Realiza backups y pruebas de restauración periódicas
+
+- Automatiza copias de seguridad de los volúmenes y verifica regularmente que los backups sean restaurables.
+- Almacena los backups fuera del host Docker para mayor seguridad.
+
+==== Monitoriza el uso de espacio y el rendimiento
+
+- Supervisa el espacio disponible en los volúmenes y el rendimiento de I/O.
+- Configura alertas para evitar interrupciones por falta de espacio o degradación del rendimiento.
+
+==== Usa volúmenes con cifrado y replicación si es necesario
+
+- Para datos sensibles, utiliza volúmenes cifrados o soluciones de almacenamiento que soporten cifrado en reposo.
+- Considera la replicación de datos para alta disponibilidad y tolerancia a fallos.
+
+==== Orquestadores y almacenamiento persistente
+
+- Si usas orquestadores como Docker Swarm o Kubernetes, utiliza drivers de volúmenes compatibles con almacenamiento persistente y dinámico (por ejemplo, StorageClass en Kubernetes).
+- Define políticas de retención y recuperación de datos en el clúster.
+
+==== Ejemplo: uso de NFS como volumen externo
+
+Para usar un servidor NFS como almacenamiento persistente, primero asegúrate de que el servidor NFS esté configurado y accesible desde el host Docker. Luego, crea un volumen Docker que use NFS como backend.
+
+.Ejemplo de creación de un volumen NFS:
+[source,sh]
+----
+docker volume create --driver local \
+  --opt type=nfs \
+  --opt o=addr=192.168.1.100,rw \
+  --opt device=:/ruta/nfs/datos \
+  datos_nfs
+
+docker run -d --name app -v datos_nfs:/app/datos myimage
+----
+
+==== Buenas prácticas adicionales
+
+- Documenta la estrategia de persistencia y recuperación de datos.
+- Separa los datos de configuración, logs y datos de usuario en diferentes volúmenes si es posible.
+- Elimina volúmenes y datos obsoletos para evitar acumulación innecesaria.
+
+== Docker Buildx
+
+=== Introducción a Docker Buildx
+
+Docker Buildx es una extensión de la CLI de Docker que proporciona capacidades avanzadas para construir imágenes de contenedores gracias a su integración directa con BuildKit, el motor de compilación de nueva generación de Docker. Buildx amplía las capacidades tradicionales de `docker build`, permitiendo, entre otras cosas, la creación de imágenes multiplataforma, la gestión avanzada de caché y la ejecución de compilaciones en paralelo, todo desde la misma interfaz de Docker.
+
+Buildx funciona bajo un modelo cliente-servidor: Buildx actúa como cliente e interfaz de usuario, mientras que BuildKit es el servidor (o "builder") que ejecuta realmente los pasos de la compilación. Cuando ejecutas un comando como `docker buildx build`, la CLI de Docker (Buildx) envía una solicitud de compilación al backend de BuildKit, que se encarga de procesar las instrucciones del Dockerfile, gestionar argumentos, cachés y exportar los resultados en el formato deseado.
+
+Esta arquitectura permite que BuildKit realice optimizaciones que el constructor heredado de Docker no puede, como la ejecución de etapas independientes en paralelo y el uso eficiente de la caché, lo que resulta en compilaciones más rápidas y reproducibles. Además, Buildx permite gestionar múltiples "builders" (instancias de BuildKit), tanto locales como remotos, facilitando la escalabilidad y la integración con infraestructuras de CI/CD o clústeres de Kubernetes.
+
+En resumen, Buildx es la interfaz avanzada y flexible para construir imágenes Docker, mientras que BuildKit es el motor subyacente que ejecuta la compilación de manera eficiente y moderna.
+
+.Aunque ambos comandos (`docker build` y `docker buildx build`) utilizan BuildKit como motor de compilación en las versiones modernas de Docker, existen diferencias clave en su alcance y funcionalidad:
+* `docker build` es esencialmente un alias de `docker buildx build` en las versiones recientes de Docker, ya que ambos invocan BuildKit por defecto. Sin embargo, `docker build` ejecuta las compilaciones usando el builder por defecto (driver `docker`), que tiene funcionalidades limitadas y requiere menos configuración.
+
+* `docker buildx build` es un superconjunto de `docker build` y expone todas las capacidades avanzadas de BuildKit. Permite:
+** Crear y gestionar múltiples "builders" (instancias de BuildKit) con diferentes configuraciones y drivers (por ejemplo, `docker-container`, `remote`), lo que facilita la construcción en diferentes entornos o arquitecturas.
+** Construir imágenes multiplataforma (multi-arch) de forma nativa y sencilla, algo que `docker build` no soporta completamente sin configuraciones adicionales.
+** Ejecutar builds en paralelo y aprovechar estrategias avanzadas de caché, tanto local como remota o embebida en el registro, optimizando tiempos y recursos.
+** Usar opciones avanzadas como `--output`, `--cache-from`, `--cache-to`, `--secret`, `--ssh`, y otras que no están disponibles o son limitadas en `docker build`.
+
+* En resumen:
+[cols="2,2"]
+|===
+| `docker build` | `docker buildx build`
+
+| Alias de Buildx, usa el builder por defecto (driver `docker`). Limitado en funcionalidades avanzadas.
+| Permite gestionar múltiples builders, drivers y configuraciones avanzadas.
+
+| Soporte básico para builds; multi-arquitectura solo con hacks o configuraciones externas.
+| Soporte nativo para builds multiplataforma, caché avanzada y outputs flexibles.
+
+| Menor flexibilidad y personalización.
+| Máxima flexibilidad, ideal para CI/CD, builds distribuidos y optimización de recursos.
+|===
+
+
+.Buildx amplía significativamente las capacidades de construcción de imágenes en Docker, aportando ventajas clave que lo convierten en la herramienta recomendada para flujos de trabajo modernos:
+
+* Multi-arquitectura (multiplataforma):
+** Permite construir imágenes para varias arquitecturas de CPU (por ejemplo, amd64, arm64, arm/v7) en una sola línea de comando, generando un manifiesto multiarquitectura (“fat manifest”) que facilita el despliegue en entornos heterogéneos como servidores x86, dispositivos IoT, o clusters mixtos.
+** Utiliza emulación (QEMU) o builders nativos para cada plataforma, lo que simplifica el proceso y elimina la necesidad de configuraciones complejas o scripts adicionales.
+** Ejemplo:
++
+----
+docker buildx build --platform linux/amd64,linux/arm64 -t usuario/imagen:tag --push .
+----
+
+* Caché avanzada:
+** Implementa una estrategia de caché de tres niveles: caché incrustada en la imagen, caché local y caché basada en registros remotos.
+** Permite compartir la caché entre diferentes máquinas o entornos, ideal para equipos distribuidos y pipelines CI/CD.
+** Mejora drásticamente los tiempos de construcción al reutilizar capas previas, incluso entre builds en distintas plataformas o entornos.
+** Ejemplo de uso de caché local:
++
+----
+docker buildx build --cache-to type=local,dest=./buildcache -t myapp:latest .
+docker buildx build --cache-from type=local,src=./buildcache -t myapp:latest .
+----
+
+* Paralelismo en la construcción:
+** Buildx puede analizar el Dockerfile y ejecutar etapas independientes en paralelo, aprovechando al máximo los recursos disponibles y reduciendo significativamente el tiempo total de construcción.
+** Esta capacidad es especialmente útil en builds complejos o multi-stage, donde varias dependencias pueden instalarse o compilarse simultáneamente.
+
+* Outputs flexibles:
+** Permite exportar el resultado de la build en diferentes formatos y destinos: imagen local, archivo tar, directorio, registro remoto, etc.
+** Facilita la integración con otros sistemas y la distribución de imágenes en distintos entornos de despliegue.
+** Ejemplo:
++
+----
+docker buildx build --output type=tar,dest=miimagen.tar -t miapp:latest .
+----
+
+* Integración con clusters y CI/CD:
+** Puede distribuir las tareas de construcción en clusters Kubernetes, aprovechando la escalabilidad, alta disponibilidad y optimización de recursos de estos entornos.
+** Esto permite builds más rápidas y robustas, especialmente en equipos grandes o proyectos con necesidades de despliegue continuo.
+
+En resumen, Buildx ofrece una solución moderna, eficiente y flexible para construir imágenes Docker, facilitando la portabilidad, el rendimiento y la integración en infraestructuras de desarrollo y producción actuales.
+
+
+=== Conceptos Fundamentales
+
+==== Arquitectura cliente-servidor: Buildx (cliente) y BuildKit (servidor)
+
+Docker Buildx y BuildKit se basan en una arquitectura cliente-servidor que separa claramente la interfaz de usuario de la ejecución real de las compilaciones.
+
+* Buildx actúa como el cliente: es la herramienta de línea de comandos (CLI) que interpreta los comandos del usuario, gestiona las opciones de construcción y envía las solicitudes de build.
+* BuildKit es el servidor (o "builder"): es el demonio responsable de ejecutar las instrucciones del Dockerfile, gestionar la caché, realizar las etapas en paralelo y exportar los resultados.
+
+Cuando ejecutas un comando como `docker buildx build`, Buildx selecciona una instancia de constructor (builder), envía el contexto y las instrucciones de construcción al backend de BuildKit, y este último analiza el Dockerfile para crear un grafo de dependencias. BuildKit identifica qué pasos pueden ejecutarse en paralelo y optimiza la utilización de recursos, lo que acelera significativamente el proceso de construcción frente al modelo secuencial tradicional.
+
+.Esta arquitectura permite:
+* Ejecución remota de builds: puedes dirigir tu CLI local a una instancia remota de BuildKit, por ejemplo, en un servidor potente, en la nube o en un clúster Kubernetes, sin consumir recursos locales innecesarios.
+* Flexibilidad y escalabilidad: puedes gestionar múltiples instancias de builder, cada una con configuraciones y capacidades distintas, adaptándose a diferentes necesidades de desarrollo y despliegue.
+* Eficiencia y modularidad: BuildKit solo solicita los recursos necesarios en el momento preciso (por ejemplo, archivos locales, secretos, credenciales), evitando transferencias innecesarias y mejorando la seguridad y el rendimiento.
+
+En resumen, la arquitectura cliente-servidor de Buildx y BuildKit permite desacoplar la interfaz de usuario de la ejecución de builds, facilitando construcciones más rápidas, escalables y adaptadas a entornos modernos y distribuidos.
+
+==== Qué es un "builder" y para qué sirve
+
+Un "builder" es una instancia del demonio BuildKit que se utiliza para ejecutar procesos de construcción de imágenes o artefactos a partir de un Dockerfile. En términos prácticos, un builder es el entorno (local o remoto) donde se llevan a cabo las compilaciones gestionadas por Buildx.
+
+Los builders permiten:
+
+* Ejecutar builds de forma independiente y aislada, cada uno con su propia configuración, caché y capacidades.
+* Gestionar múltiples entornos de construcción: puedes crear builders locales, en contenedores dedicados, en clusters de Kubernetes o en servidores remotos, según las necesidades del proyecto.
+* Seleccionar y cambiar fácilmente entre diferentes builders usando la CLI de Docker, lo que facilita la adaptación a distintos flujos de trabajo o plataformas.
+* Optimizar y escalar builds: al distribuir las tareas entre varios builders, puedes acelerar los tiempos de construcción y aprovechar recursos externos sin sobrecargar tu máquina local.
+
+El builder predeterminado suele estar vinculado al demonio Docker local, pero puedes crear y gestionar otros builders con configuraciones personalizadas, por ejemplo, para builds multiplataforma o con caché compartida.
+
+En resumen, un builder es la entidad que ejecuta los procesos de construcción en Docker Buildx, y su gestión flexible permite adaptar, escalar y optimizar los flujos de trabajo de construcción de imágenes en proyectos modernos.
+
+==== Drivers disponibles: docker, docker-container, kubernetes, remote
+
+Buildx soporta varios drivers que determinan cómo y dónde se ejecuta el backend de BuildKit, permitiendo adaptar el entorno de construcción a diferentes necesidades y escenarios:
+
+* `docker` (por defecto):
+** Utiliza la biblioteca BuildKit integrada en el demonio Docker.
+** Prioriza la simplicidad y facilidad de uso, pero tiene soporte limitado para funcionalidades avanzadas como exportación de caché o formatos de salida personalizados.
+** Las imágenes construidas aparecen automáticamente en el listado local de imágenes (`docker images`).
+** No soporta nativamente la construcción multiplataforma ni la exportación avanzada de caché.
+
+* `docker-container`:
+** Crea un entorno BuildKit dedicado en un contenedor Docker gestionado por Buildx.
+** Permite usar versiones personalizadas de BuildKit y soporta funcionalidades avanzadas como builds multiplataforma, exportación/importación de caché y configuración de recursos del contenedor (CPU, memoria, etc).
+** Las imágenes no aparecen automáticamente en el listado local; debes usar `--load` para cargarlas o `--push` para subirlas a un registro.
+
+* `kubernetes`:
+** Despliega pods BuildKit en un clúster de Kubernetes, permitiendo aprovechar la escalabilidad y recursos del clúster para builds distribuidos y de alto rendimiento.
+** Ideal para integraciones CI/CD en entornos empresariales o builds a gran escala.
+** Las imágenes tampoco aparecen automáticamente en el listado local; requiere `--load` o `--push`.
+
+* `remote`:
+** Se conecta a una instancia de BuildKit gestionada manualmente, ya sea en otra máquina, en la nube o expuesta mediante un socket o endpoint TCP.
+** Útil para escenarios donde se necesita separar la orquestación del build de la ejecución, o para aprovechar hardware específico (por ejemplo, builds nativos para ARM en máquinas ARM).
+** Requiere configuración manual del daemon BuildKit y de los certificados de seguridad si es necesario.
+
+[cols="5,5,5,5,5"]
+|===
+|Característica | docker | docker-container | kubernetes | remote
+
+|Simplicidad y uso inmediato
+|✅
+|—
+|—
+|—
+
+|Soporte multi-arquitectura
+|Limitado
+|✅
+|✅
+|✅
+
+|Exportación avanzada de caché
+|Limitado
+|✅
+|✅
+|✅
+
+|Configuración personalizada de recursos
+|No
+|Sí
+|Sí (vía Kubernetes)
+|Sí (según configuración)
+
+|Aparición automática en `docker images`
+|✅
+|No (requiere `--load`)
+|No (requiere `--load`)
+|No (requiere `--load`)
+|===
+
+Cada driver está pensado para un caso de uso específico, desde la simplicidad local hasta la escalabilidad y personalización en entornos distribuidos o empresariales.
+
+
+=== Gestión de Instancias de Builder
+
+Docker Buildx permite gestionar múltiples instancias de builder, cada una con su propia configuración, capacidades y contexto. Esto es fundamental para adaptarse a diferentes flujos de trabajo, arquitecturas y entornos de construcción.
+
+==== Listar builders disponibles
+
+Para ver todas las instancias de builder y sus detalles, utiliza:
+
+----
+docker buildx ls
+----
+
+El resultado muestra los nombres, drivers, estado, versión de BuildKit y las plataformas soportadas por cada builder. El builder actualmente seleccionado aparece marcado con un asterisco (`*`).
+
+==== Crear un nuevo builder
+
+Puedes crear una nueva instancia de builder con un nombre personalizado usando:
+
+----
+docker buildx create --name <nombre_builder>
+----
+
+Por defecto, este comando usa el driver `docker-container`, que es el más flexible para builds avanzados y multiplataforma.
+
+==== Cambiar de builder
+
+Para seleccionar el builder que quieres usar en tus operaciones de construcción:
+
+----
+docker buildx use <nombre_builder>
+----
+
+Esto establece el builder como predeterminado para el contexto actual.
+
+==== Inspeccionar un builder
+
+Para ver información detallada sobre un builder específico, incluyendo nodos, plataformas soportadas y configuración:
+
+----
+docker buildx inspect <nombre_builder>
+----
+
+Puedes añadir la opción `--bootstrap` para asegurarte de que el builder está iniciado antes de inspeccionarlo.
+
+==== Eliminar un builder
+
+Si ya no necesitas un builder, puedes eliminarlo con:
+
+----
+docker buildx rm <nombre_builder>
+----
+
+Esto libera recursos y mantiene tu entorno organizado.
+
+==== Resumen de comandos principales
+
+|===
+| Comando                           | Descripción                                         
+| `docker buildx ls`                | Lista todos los builders disponibles                
+| `docker buildx create --name N`   | Crea una nueva instancia de builder                 
+| `docker buildx use N`             | Cambia al builder N como predeterminado             
+| `docker buildx inspect [N]`       | Inspecciona el builder N o el actual                
+| `docker buildx rm N`              | Elimina el builder N                                
+|===
+
+Esta gestión flexible de instancias de builder permite optimizar y personalizar los procesos de construcción en Docker Buildx, facilitando la adaptación a proyectos de distinta complejidad y requisitos de arquitectura.
+
+
+=== Uso Básico de Buildx
+
+Docker Buildx es la herramienta recomendada para construir imágenes de contenedores modernas, permitiendo compilaciones multiplataforma, optimización de caché y procesamiento en paralelo, todo integrado en la CLI de Docker.
+
+==== Comando principal
+
+El comando base para iniciar una construcción es:
+
+----
+docker buildx build [OPCIONES] RUTA_O_URL_DEL_CONTEXTO
+----
+
+Por ejemplo, para construir una imagen desde el Dockerfile del directorio actual:
+
+----
+docker buildx build -t mi_aplicacion_web:1.0 .
+----
+
+==== Opciones más comunes
+
+Las opciones principales que puedes usar con `docker buildx build` son:
+
+* `-t, --tag nombre:etiqueta`  
+  Asigna un nombre y etiqueta a la imagen resultante.
+
+* `-f, --file ruta_al_dockerfile`  
+  Especifica el archivo Dockerfile a utilizar (por defecto busca `Dockerfile` en el contexto).
+
+* `--platform plataforma[,plataforma...]`  
+  Define la(s) plataforma(s) objetivo, por ejemplo: `linux/amd64,linux/arm64`.
+
+* `--push`  
+  Publica la imagen directamente en un registro remoto tras la construcción.
+
+* `--load`  
+  Carga la imagen construida en el demonio Docker local (útil si usas el driver `docker-container`).
+
+* `-o, --output tipo=destino`  
+  Exporta el resultado a diferentes formatos o ubicaciones, como un directorio local, archivo tar, o registro.
+
+* `--build-arg clave=valor`  
+  Pasa variables de entorno al proceso de construcción.
+
+* `--cache-from`, `--cache-to`  
+  Gestiona fuentes y destinos de caché para acelerar builds y compartir resultados entre entornos.
+
+* `--secret id=mi_secreto,src=/ruta/al/archivo`  
+  Inyecta secretos de forma segura durante la construcción.
+
+* `--ssh default`  
+  Permite el uso de claves SSH en etapas que lo requieran.
+
+==== Ejemplos prácticos
+
+* Construir imagen básica:
++
+----
+docker buildx build -t mi_app:latest .
+----
+
+* Construcción multiplataforma y push:
++
+----
+docker buildx build --platform linux/amd64,linux/arm64 -t usuario/mi_app:multiarch --push .
+----
+
+* Usar un Dockerfile específico y contexto personalizado:
++
+----
+docker buildx build -f Dockerfile.prod -t mi_app:prod ./src
+----
+
+* Utilizar caché local para acelerar builds:
++
+----
+docker buildx build --cache-from type=local,src=./buildcache --cache-to type=local,dest=./buildcache -t mi_app:cache .
+----
+
+==== Flujo de trabajo resumido
+
+1. Selecciona o crea un builder adecuado para tu proyecto.
+2. Ejecuta `docker buildx build` con las opciones necesarias según tu flujo de trabajo.
+3. Inspecciona los resultados y, si es necesario, publica o exporta la imagen.
+
+
+
+=== Ejemplos Prácticos
+
+Docker Buildx permite construir imágenes de forma eficiente y flexible, tanto para desarrollos locales como para despliegues multiplataforma o integraciones en CI/CD. A continuación se muestran ejemplos prácticos de uso, desde lo más básico hasta flujos avanzados.
+
+==== Construcción básica de una imagen
+
+Supón que tienes un proyecto Node.js con el siguiente Dockerfile:
+
+----
+FROM node:14
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["node", "server.js"]
+----
+
+Para construir la imagen usando Buildx:
+
+----
+docker buildx build -t my-node-app:latest .
+----
+
+Esto genera una imagen etiquetada como `my-node-app:latest` usando el Dockerfile del directorio actual.
+
+==== Construcción multiplataforma
+
+Si necesitas que tu imagen funcione tanto en arquitecturas amd64 como arm64 (por ejemplo, para servidores x86 y Raspberry Pi), puedes usar:
+
+----
+docker buildx build --platform linux/amd64,linux/arm64 -t my-multi-platform-app:latest --push .
+----
+
+Este comando construye la imagen para ambas arquitecturas y la sube directamente a un registro (por ejemplo, Docker Hub), permitiendo que cualquier máquina la descargue y ejecute sin importar su arquitectura.
+
+==== Uso de compilaciones multietapa (multi-stage builds)
+
+Las compilaciones multietapa permiten optimizar el tamaño y la seguridad de las imágenes. Por ejemplo, para una aplicación Python:
+
+----
+# Dockerfile.optimized
+
+FROM python:3.13-slim AS base
+WORKDIR /app
+COPY requirements.txt .
+
+FROM base AS builder
+RUN pip install --no-cache-dir --target=/install -r requirements.txt
+
+FROM base AS linter
+COPY --from=builder /install /usr/local/lib/python3.13/site-packages
+COPY app.py .
+RUN pip install pylint && pylint app.py || exit 0
+
+FROM base AS tester
+COPY --from=builder /install /usr/local/lib/python3.9/site-packages
+COPY app.py .
+RUN pip install pytest && python -m pytest app.py -v || exit 0
+
+FROM python:3.13-alpine AS final
+WORKDIR /app
+COPY --from=builder /install /usr/local/lib/python3.13/site-packages
+COPY app.py .
+EXPOSE 5000
+CMD ["python", "app.py"]
+----
+
+Construye la imagen optimizada así:
+
+----
+docker buildx build --file Dockerfile.optimized -t myapp:optimized --load .
+----
+
+Buildx ejecutará las etapas independientes (como `linter` y `tester`) en paralelo, acelerando el proceso y generando una imagen final más pequeña y eficiente.
+
+==== Ejemplo de caché avanzada
+
+Para acelerar builds repetidos, puedes utilizar la caché local:
+
+----
+docker buildx build --cache-to type=local,dest=./buildcache -t myapp:latest .
+docker buildx build --cache-from type=local,src=./buildcache -t myapp:latest .
+----
+
+Esto permite reutilizar capas previas y reducir drásticamente los tiempos de compilación en desarrollos iterativos.
+
+==== Automatización en CI/CD
+
+Buildx se integra fácilmente en pipelines de CI/CD. Por ejemplo, en GitHub Actions o Jenkins puedes crear el builder, construir la imagen multiplataforma y subirla a un registro en cada push:
+
+----
+docker buildx create --use
+docker buildx build --platform linux/amd64,linux/arm64 -t usuario/app:ci --push .
+----
+
+==== Exportar imágenes en diferentes formatos
+
+Puedes exportar el resultado a un archivo tar o a un directorio local, útil para pruebas o distribución fuera de un registro:
+
+----
+docker buildx build --output type=tar,dest=miimagen.tar -t miapp:latest .
+docker buildx build --output type=local,dest=./output -t miapp:latest .
+----
+
+
+=== Funcionalidades Avanzadas
+
+Docker Buildx ofrece un conjunto de funcionalidades avanzadas que amplían y optimizan los flujos de trabajo de construcción de imágenes, especialmente en entornos complejos, distribuidos o de CI/CD. Estas capacidades van mucho más allá de lo que permite el comando clásico `docker build`.
+
+==== Construcción multiplataforma y cross-compilation
+
+* Permite construir imágenes para varias arquitecturas (por ejemplo, `linux/amd64`, `linux/arm64`, etc.) en un solo comando, generando imágenes listas para ejecutarse en cualquier entorno objetivo.
+* Soporta la compilación cruzada (cross-compilation), permitiendo crear imágenes para arquitecturas distintas a la de la máquina host, ideal para IoT, edge computing o despliegues híbridos.
+
+==== Optimización de builds multietapa y paralelismo
+
+* Buildx aprovecha BuildKit para identificar etapas independientes en Dockerfiles multietapa y ejecutarlas en paralelo, acelerando significativamente la construcción y reduciendo el tiempo total de build.
+* Esta optimización es especialmente útil en proyectos con etapas de linting, testing y build desacopladas, donde las tareas pueden ejecutarse simultáneamente.
+
+==== Exportadores y outputs flexibles
+
+* Buildx soporta múltiples tipos de exportadores para los resultados de la build, configurables mediante la opción `--output`:
+** `image`: exporta la imagen al demonio Docker local.
+** `registry`: sube la imagen directamente a un registro remoto.
+** `local`: exporta el sistema de archivos raíz de la build a un directorio local.
+** `tar`: empaqueta el sistema de archivos raíz en un archivo tar local.
+** `oci`: exporta la imagen en formato OCI.
+** `docker`: exporta la imagen en formato Docker Image Spec v1.2.0.
+** `cacheonly`: ejecuta el build solo para generar caché, sin exportar una imagen.
+* Ejemplo:
++
+----
+docker buildx build --output type=tar,dest=miimagen.tar -t miapp:latest .
+----
+
+==== Gestión avanzada de caché
+
+* Buildx permite exportar e importar caché de builds, tanto localmente como en registros remotos, acelerando builds repetidos y facilitando la colaboración en equipos distribuidos.
+* Ejemplo:
++
+----
+docker buildx build --cache-to type=local,dest=./buildcache -t myapp:latest .
+docker buildx build --cache-from type=local,src=./buildcache -t myapp:latest .
+----
+
+==== Ejecución remota y builders externos
+
+* Puedes ejecutar builds en builders remotos, servidores dedicados, clusters Kubernetes o servicios en la nube, liberando recursos locales y escalando la capacidad de construcción según la demanda.
+* Esto permite adaptar los flujos de trabajo a necesidades empresariales, builds masivos o integración con pipelines de CI/CD.
+
+==== buildx bake: orquestación de builds complejos
+
+* `docker buildx bake` permite definir y construir múltiples imágenes en paralelo desde un solo archivo de configuración (`docker-bake.hcl`, JSON o incluso archivos de Docker Compose).
+* Ideal para monorepos, microservicios o proyectos con múltiples imágenes y dependencias compartidas.
+* Ejemplo de archivo HCL:
++
+----
+group "default" {
+  targets = ["app", "db", "cron"]
+}
+
+target "app" {
+  dockerfile = "Dockerfile.app"
+  platforms = ["linux/amd64", "linux/arm64"]
+  tags = ["repo/app:test"]
+}
+----
+* Ejecuta todos los targets en paralelo:
++
+----
+docker buildx bake
+----
+
+==== buildx imagetools: gestión avanzada de imágenes y manifests
+
+* El subcomando `docker buildx imagetools` permite trabajar con manifest lists en registros de contenedores, inspeccionando y gestionando imágenes multiplataforma y sus configuraciones.
+* Ejemplo:
++
+----
+docker buildx imagetools inspect usuario/imagen:tag
+----
+
+=== Buenas Prácticas y Optimización
+
+Aplicar buenas prácticas y técnicas de optimización al usar Docker Buildx es fundamental para obtener imágenes más pequeñas, builds más rápidos y flujos de trabajo predecibles y eficientes. A continuación se resumen las recomendaciones clave respaldadas por la experiencia y la documentación especializada:
+
+==== Optimización de builds multietapa y paralelismo
+
+* Utiliza compilaciones multietapa para reducir el tamaño de la imagen final, separando las fases de construcción, pruebas, linting y empaquetado. Solo copia al resultado final lo estrictamente necesario.
+* Buildx permite que etapas independientes se ejecuten en paralelo, acelerando significativamente el proceso de construcción frente al builder clásico. Por ejemplo, las etapas de `linter` y `tester` pueden correr simultáneamente si no dependen entre sí.
+* Ejemplo de build multietapa optimizada:
++
+----
+docker buildx build --file Dockerfile.optimized -t myapp:optimized --load .
+----
+
+==== Aprovecha la caché avanzada
+
+* Usa las opciones `--cache-from` y `--cache-to` para reutilizar capas previas y compartir caché entre diferentes builds o entornos, acelerando reconstrucciones y ahorrando recursos.
+* Ejemplo:
++
+----
+# Primera build: crea la caché
+docker buildx build --load -t myapp:latest --cache-to type=local,dest=./buildcache .
+
+# Builds posteriores: reutiliza la caché
+docker buildx build --load -t myapp:latest --cache-from type=local,src=./buildcache .
+----
+* Ordena las instrucciones del Dockerfile de lo más estable a lo más cambiante para maximizar el aprovechamiento de la caché.
+* Utiliza `--mount=type=cache` en etapas que descargan dependencias o generan archivos temporales, para mantener estos directorios entre builds.
+
+==== Minimiza el contexto de build
+
+* Usa un archivo `.dockerignore` bien definido para excluir archivos y carpetas innecesarias del contexto de build (por ejemplo: `.git`, `node_modules`, archivos temporales, etc.), lo que reduce el tamaño del contexto y acelera la transferencia y el análisis.
++
+----
+# Ejemplo de .dockerignore
+.git
+node_modules
+__pycache__
+*.pyc
+*.pyo
+.DS_Store
+----
+* Esto evita que archivos irrelevantes se copien a la imagen y que la caché se invalide por cambios frecuentes en archivos no esenciales.
+
+==== Mantén el Dockerfile simple y eficiente
+
+* Minimiza el número de capas combinando comandos en una sola instrucción `RUN` cuando sea posible.
+* Limpia archivos temporales y cachés de paquetes tras la instalación para reducir el tamaño final de la imagen.
+* Coloca las instrucciones que cambian menos al principio del Dockerfile y las más volátiles (como `COPY . .`) al final, para aprovechar mejor la caché de capas.
+
+==== Usa etiquetas y versiones explícitas
+
+* Etiqueta tus imágenes con versiones o tags significativos para evitar confusiones y facilitar la trazabilidad en despliegues y entornos de CI/CD.
+* Evita utilizar solo `latest` salvo en entornos de desarrollo.
+
+==== Seguridad y secretos
+
+* Usa el soporte de secretos de Buildx (`--secret`) para inyectar credenciales o claves de forma segura durante la build, evitando que queden expuestas en las capas de la imagen.
+
+==== Medición y comparación de builds
+
+* Mide los tiempos de construcción y el tamaño de las imágenes para validar las mejoras introducidas:
++
+----
+time docker buildx build --load -t myapp:parallel -f Dockerfile.parallel .
+docker images myapp
+----
+
+=== Recursos y documentación para buildx
+
+Contar con recursos oficiales y comunitarios es fundamental para dominar Docker Buildx y aprovechar todas sus capacidades avanzadas. A continuación se listan las principales fuentes de información y soporte técnico actualizadas a 2025:
+
+==== Documentación oficial de Docker Buildx
+
+* Referencia de comandos y opciones:
+** https://docs.docker.com/reference/cli/docker/buildx/ 
+** https://docs.docker.com/reference/cli/docker/buildx/build/ 
+* Conceptos y arquitectura:
+** https://docs.docker.com/build/concepts/overview/ 
+* Guía de trabajo con Buildx:
+** https://docker-docs.uclv.cu/buildx/working-with-buildx/ 
+
+==== Repositorio oficial en GitHub
+
+* Código fuente, releases, issues y documentación técnica avanzada:
+** https://github.com/docker/buildx 
+* Ejemplos de instalación manual, uso en Dockerfile y automatización en CI/CD.
+
+==== Comunidad Docker
+
+* Foros, blogs, tutoriales y contribuciones de expertos (Docker Captains):
+** https://www.docker.com/community/ 
+* Ejemplos de integración con GitHub Actions, publicación de imágenes multi-arch, buenas prácticas y casos de uso reales.
+
+==== Subcomandos y utilidades clave
+
+Buildx incluye subcomandos útiles para gestionar builders, caché, imágenes y flujos avanzados:
+
+|===
+| Comando                        | Descripción                                              
+| `docker buildx build`          | Inicia una build con BuildKit                            
+| `docker buildx create`         | Crea una nueva instancia de builder                      
+| `docker buildx ls`             | Lista builders disponibles                               
+| `docker buildx use`            | Selecciona el builder activo                             
+| `docker buildx inspect`        | Muestra detalles del builder                             
+| `docker buildx rm`             | Elimina builders                                         
+| `docker buildx bake`           | Orquesta builds desde archivos de configuración          
+| `docker buildx imagetools`     | Gestiona y consulta imágenes y manifests multi-arch      
+| `docker buildx prune`          | Limpia caché de builds                                   
+| `docker buildx version`        | Muestra la versión de buildx instalada                   
+|===
+
+==== Instalación y actualización
+
+* Buildx viene incluido por defecto en Docker Desktop (Windows/macOS) y en los paquetes oficiales de Docker Engine para Linux.
+* Para instalaciones manuales o actualizaciones específicas, consulta el repositorio de GitHub y sigue las instrucciones para tu sistema operativo.
+
+==== Consejos para profundizar
+
+* Consulta los ejemplos y tutoriales de la comunidad para casos prácticos y automatización en CI/CD (por ejemplo, integración con GitHub Actions o Jenkins).
+* Participa en foros y canales oficiales para resolver dudas y compartir experiencias con otros usuarios avanzados.
+* Revisa periódicamente las notas de versión y la hoja de ruta pública para estar al día de nuevas funcionalidades y mejoras.
+
+== Docker Compose
+
+Docker Compose es una herramienta que permite definir, configurar y gestionar aplicaciones multicontenedor de manera sencilla y declarativa, utilizando archivos YAML. Es ideal para entornos de desarrollo, pruebas y despliegues donde se requieren varios servicios (por ejemplo, una aplicación web, una base de datos y un sistema de caché) que deben funcionar juntos.
+
+=== Introducción a Docker Compose
+
+Docker Compose es una herramienta que permite definir, configurar y gestionar aplicaciones multicontenedor de forma sencilla y declarativa mediante archivos YAML. Es especialmente útil cuando una aplicación requiere varios servicios (por ejemplo, una web, una base de datos y un sistema de caché) que deben funcionar juntos y comunicarse entre sí.
+
+==== Ventajas de Docker Compose
+
+- Permite definir toda la arquitectura de la aplicación en un solo archivo (`docker-compose.yml`).
+- Facilita la reproducción de entornos en diferentes máquinas y equipos.
+- Automatiza la creación de redes, volúmenes y dependencias entre servicios.
+- Simplifica la gestión del ciclo de vida de aplicaciones multicontenedor con comandos simples.
+
+==== ¿Cómo funciona?
+
+Compose utiliza un archivo YAML donde se describen los servicios, redes y volúmenes necesarios. Con comandos como `docker-compose up` y `docker-compose down`, puedes levantar o detener toda la aplicación de manera sencilla.
+
+==== Ejemplo básico de archivo docker-compose.yml
+
+[source,yaml]
+----
+version: "3.9"
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ejemplo
+    volumes:
+      - datos_mysql:/var/lib/mysql
+
+volumes:
+  datos_mysql:
+----
+
+En este ejemplo:
+- Se definen dos servicios: `web` (nginx) y `db` (MySQL).
+- Se mapea el puerto 8080 del host al 80 del contenedor nginx.
+- Se crea un volumen persistente para los datos de la base de datos.
+
+==== Comandos principales de Docker Compose
+
+- `docker-compose up -d`: Levanta todos los servicios en segundo plano.
+- `docker-compose down`: Detiene y elimina los contenedores, redes y volúmenes creados.
+- `docker-compose ps`: Lista los servicios en ejecución.
+- `docker-compose logs`: Muestra los logs de todos los servicios.
+- `docker-compose exec <servicio> <comando>`: Ejecuta un comando en un contenedor de un servicio.
+
+==== Buenas prácticas
+
+- Mantén el archivo `docker-compose.yml` bajo control de versiones.
+- Usa variables de entorno para parametrizar configuraciones sensibles o cambiantes.
+- Define volúmenes para persistir datos importantes.
+- Documenta la función de cada servicio y volumen en el archivo.
+
+=== Estructura del archivo docker-compose.yml
+
+El archivo `docker-compose.yml` es el núcleo de Docker Compose y define, de manera declarativa, todos los servicios, redes y volúmenes que forman una aplicación multicontenedor. Su sintaxis está basada en YAML y es fácil de leer y mantener.
+
+==== Secciones principales del archivo
+
+- `version`: Especifica la versión del esquema de Compose (por ejemplo, `"3.9"`).
+- `services`: Define los contenedores (servicios) que componen la aplicación.
+- `volumes`: Declara volúmenes persistentes que pueden ser usados por los servicios.
+- `networks`: (Opcional) Define redes personalizadas para aislar o conectar servicios.
+
+==== Ejemplo básico de estructura
+
+[source,yaml]
+----
+version: "3.9"
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    networks:
+      - red_interna
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ejemplo
+    volumes:
+      - datos_mysql:/var/lib/mysql
+    networks:
+      - red_interna
+
+volumes:
+  datos_mysql:
+
+networks:
+  red_interna:
+----
+
+==== Explicación de los elementos
+
+- **services**: Cada clave bajo `services` representa un servicio (contenedor). Puedes definir su imagen, build, variables de entorno, puertos, volúmenes, dependencias, etc.
+- **volumes**: Permite declarar volúmenes persistentes que pueden ser compartidos entre servicios.
+- **networks**: Define redes personalizadas para controlar la comunicación entre servicios.
+
+==== Opciones comunes en servicios
+
+- `build`: Ruta al Dockerfile para construir la imagen localmente.
+- `image`: Imagen a usar (puede ser de Docker Hub o personalizada).
+- `ports`: Lista de puertos a mapear (`host:contenedor`).
+- `environment`: Variables de entorno.
+- `volumes`: Montajes de volúmenes o bind mounts.
+- `depends_on`: Define dependencias de arranque entre servicios.
+- `command`: Comando a ejecutar al iniciar el contenedor.
+- `restart`: Política de reinicio (`always`, `on-failure`, etc.).
+- `networks`: Redes a las que se conecta el servicio.
+
+==== Ejemplo avanzado
+
+.Este ejemplo muestra una aplicación web con Flask y PostgreSQL, donde se definen dos servicios (`app` y `db`), un volumen para la base de datos y una red personalizada.
+[source,yaml]
+----
+version: "3.9"
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    networks:
+      - backend
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: ejemplo
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+    networks:
+      - backend
+
+volumes:
+  datos_pg:
+
+networks:
+  backend:
+----
+
+==== Buenas prácticas
+
+- Usa nombres descriptivos para servicios, volúmenes y redes.
+- Mantén el archivo indentado correctamente (YAML es sensible a la indentación).
+- Documenta cada sección con comentarios si es necesario.
+- Separa configuraciones de desarrollo y producción usando archivos adicionales o variables de entorno.
+
+=== Definición de servicios, redes y volúmenes
+
+En Docker Compose, la definición de servicios, redes y volúmenes en el archivo `docker-compose.yml` permite describir de forma declarativa toda la arquitectura de una aplicación multicontenedor. A continuación se explica cada uno de estos elementos con ejemplos y buenas prácticas.
+
+==== Servicios
+
+Un servicio representa un contenedor o grupo de contenedores idénticos que ejecutan una parte de la aplicación (por ejemplo, una web, una base de datos, un sistema de caché).
+
+.Ejemplo de definición de servicios:
+[source,yaml]
+----
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - backend
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ejemplo
+    volumes:
+      - datos_mysql:/var/lib/mysql
+    networks:
+      - backend
+----
+
+.*Opciones comunes en servicios:*
+- `image`: Imagen a usar para el servicio.
+- `build`: Ruta al Dockerfile si se construye la imagen localmente.
+- `ports`: Mapeo de puertos entre host y contenedor.
+- `environment`: Variables de entorno.
+- `volumes`: Montaje de volúmenes o bind mounts.
+- `depends_on`: Define dependencias de arranque entre servicios.
+- `networks`: Redes a las que se conecta el servicio.
+- `command`, `restart`, `healthcheck`, etc.
+
+==== Volúmenes
+
+Los volúmenes permiten persistir datos y compartirlos entre servicios. Se definen en la sección `volumes` y luego se referencian en los servicios.
+
+.Ejemplo de definición de volúmenes:
+[source,yaml]
+----
+volumes:
+  datos_mysql:
+  datos_pg:
+----
+
+*Uso en servicios:*
+[source,yaml]
+----
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+----
+
+==== Redes
+
+Las redes permiten aislar y controlar la comunicación entre servicios. Compose crea una red por defecto, pero puedes definir redes personalizadas para mayor control.
+
+.Ejemplo de definición de redes:
+[source,yaml]
+----
+networks:
+  backend:
+  frontend:
+----
+
+*Asignación de redes a servicios:*
+[source,yaml]
+----
+services:
+  web:
+    image: nginx:alpine
+    networks:
+      - frontend
+      - backend
+  db:
+    image: mysql:8
+    networks:
+      - backend
+----
+
+==== Ejemplo completo de docker-compose.yml
+
+[source,yaml]
+----
+version: "3.9"
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    networks:
+      - frontend
+      - backend
+  app:
+    build: .
+    depends_on:
+      - db
+    networks:
+      - backend
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: ejemplo
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+    networks:
+      - backend
+
+volumes:
+  datos_pg:
+
+networks:
+  frontend:
+  backend:
+----
+
+==== Buenas prácticas
+
+- Usa nombres descriptivos para servicios, redes y volúmenes.
+- Separa redes internas (backend) y externas (frontend) para mayor seguridad.
+- Define volúmenes para persistir datos críticos.
+- Utiliza `depends_on` para controlar el orden de arranque de los servicios.
+- Documenta la función de cada elemento en el archivo YAML.
+
+=== Gestión del ciclo de vida de aplicaciones multi-contenedor
+
+La gestión del ciclo de vida de aplicaciones multi-contenedor implica controlar de manera eficiente el despliegue, actualización, monitoreo y eliminación de todos los servicios que forman parte de una solución definida con Docker Compose. A continuación se explican los aspectos clave y comandos esenciales para administrar aplicaciones multicontenedor.
+
+==== Arranque y parada de la aplicación
+
+.**Levantar todos los servicios**:
+[source,sh]
+----
+docker-compose up -d
+----
+Esto crea y arranca todos los contenedores definidos en el archivo `docker-compose.yml` en segundo plano.
+
+.**Detener y eliminar servicios, redes y volúmenes**:
+[source,sh]
+----
+docker-compose down
+----
+.Por defecto, elimina los contenedores y redes creados. Para eliminar también los volúmenes:
+[source,sh]
+----
+docker-compose down -v
+----
+
+==== Escalado de servicios
+
+.Puedes escalar un servicio para ejecutar múltiples instancias (réplicas) del mismo contenedor:
+[source,sh]
+----
+docker-compose up -d --scale web=3
+----
+Esto ejecuta tres instancias del servicio `web`.
+
+==== Actualización y recreación de servicios
+
+.**Reconstruir imágenes y recrear contenedores**:
+[source,sh]
+----
+docker-compose up -d --build
+----
+
+.**Recrear un solo servicio**:
+[source,sh]
+----
+docker-compose up -d --no-deps --build web
+----
+
+==== Monitorización y logs
+
+.**Ver el estado de los servicios**:
+[source,sh]
+----
+docker-compose ps
+----
+
+.**Ver logs de todos los servicios o de uno específico**:
+[source,sh]
+----
+docker-compose logs
+docker-compose logs db
+----
+
+.**Acceder a un contenedor en ejecución**:
+[source,sh]
+----
+docker-compose exec web bash
+----
+
+==== Parada, reinicio y eliminación selectiva
+
+.**Detener todos los servicios sin eliminar recursos**:
+[source,sh]
+----
+docker-compose stop
+----
+
+.**Reiniciar servicios**:
+[source,sh]
+----
+docker-compose restart
+----
+
+.**Eliminar solo los contenedores (manteniendo redes y volúmenes)**:
+[source,sh]
+----
+docker-compose rm
+----
+
+==== Actualización de la configuración
+
+.Si modificas el archivo `docker-compose.yml`, puedes aplicar los cambios con:
+[source,sh]
+----
+docker-compose up -d
+----
+
+Compose detectará los cambios y recreará solo los servicios afectados.
+
+==== Buenas prácticas
+
+- Mantén el archivo `docker-compose.yml` bajo control de versiones.
+- Usa variables de entorno para parametrizar configuraciones sensibles.
+- Realiza backups periódicos de los volúmenes de datos.
+- Documenta los comandos y procedimientos habituales para tu equipo.
+
+=== Entornos de desarrollo vs. producción
+
+El uso de Docker en entornos de desarrollo y producción presenta diferencias clave en cuanto a configuración, seguridad, persistencia y gestión de recursos. Entender estas diferencias es fundamental para diseñar flujos de trabajo eficientes y seguros.
+
+==== Objetivos y prioridades
+
+- *Desarrollo*: Flexibilidad, rapidez en los cambios, facilidad de depuración y pruebas, integración con herramientas locales.
+- *Producción*: Estabilidad, seguridad, rendimiento, escalabilidad, alta disponibilidad y recuperación ante fallos.
+
+==== Configuración de servicios
+
+- En desarrollo, es común usar archivos `docker-compose.yml` con montajes de código fuente (`bind mounts`) para reflejar cambios instantáneamente.
+- En producción, se recomienda usar imágenes inmutables y volúmenes gestionados por Docker para datos persistentes, evitando bind mounts directos del host.
+
+.Ejemplo de diferencia en volúmenes:
+[source,yaml]
+----
+# Desarrollo
+volumes:
+  - .:/app  # Bind mount del código fuente
+
+# Producción
+volumes:
+  - datos_app:/app  # Volumen gestionado por Docker
+----
+
+==== Variables de entorno y secretos
+
+- En desarrollo, las variables suelen almacenarse en archivos `.env` o directamente en el compose.
+- En producción, utiliza gestores de secretos (Docker Secrets, Vault, AWS Secrets Manager) y evita exponer credenciales en archivos o imágenes.
+
+==== Seguridad
+
+- En desarrollo, puede ser aceptable ejecutar contenedores como root o exponer puertos ampliamente.
+- En producción, ejecuta servicios con usuarios no privilegiados, limita los puertos expuestos y aplica políticas de red y recursos.
+
+==== Escalabilidad y orquestación
+
+- En desarrollo, Compose es suficiente para levantar varios servicios en un solo host.
+- En producción, considera orquestadores como Docker Swarm o Kubernetes para gestionar múltiples instancias, balanceo de carga y alta disponibilidad.
+
+==== Monitorización y logging
+
+- En desarrollo, los logs pueden verse con `docker logs` o `docker-compose logs`.
+- En producción, integra soluciones de logging centralizado (ELK, Loki, Fluentd) y monitorización (Prometheus, Grafana).
+
+==== Actualización y despliegue
+
+- En desarrollo, los cambios son frecuentes y los contenedores se recrean a menudo.
+- En producción, usa despliegues controlados (rolling updates, blue/green deployments) y versiona las imágenes.
+
+==== Buenas prácticas
+
+- Mantén archivos de configuración separados para desarrollo y producción (`docker-compose.override.yml`, variables de entorno, etc.).
+- Documenta las diferencias y requisitos de cada entorno.
+- Automatiza pruebas y despliegues para reducir errores humanos.
+
+== Docker Swarm mode
+
+Docker Swarm es la herramienta de orquestación nativa de Docker que permite gestionar clústeres de contenedores de manera sencilla y eficiente. Proporciona funcionalidades como el balanceo de carga, la alta disponibilidad y la escalabilidad automática, facilitando la implementación y gestión de aplicaciones distribuidas.
+
+Aunque Kubernetes se ha convertido en la herramienta de orquestación más popular y ampliamente adoptada, Docker Swarm mode sigue siendo utilizado en producción por muchas organizaciones que buscan una solución más sencilla y ligera.
+
+=== Introducción a Docker Swarm
+
+Docker Swarm es la solución de orquestación nativa de Docker para gestionar clústeres de contenedores de forma sencilla, escalable y altamente disponible. Permite agrupar varios hosts Docker en un clúster (llamado "Swarm") y desplegar aplicaciones distribuidas como servicios, facilitando la administración, el escalado y la tolerancia a fallos.
+
+==== Características principales de Docker Swarm
+
+- **Orquestación nativa**: Integrado en Docker Engine, sin necesidad de herramientas externas.
+- **Alta disponibilidad**: Los servicios pueden ejecutarse en múltiples nodos, con replicación y failover automático.
+- **Escalabilidad**: Permite escalar servicios fácilmente con un solo comando.
+- **Balanceo de carga**: Distribuye el tráfico entre las réplicas de los servicios.
+- **Despliegue declarativo**: Define el estado deseado de los servicios y Swarm se encarga de mantenerlo.
+- **Seguridad**: Comunicación cifrada entre nodos y gestión de secretos integrada.
+- **Rolling updates y rollbacks**: Actualizaciones controladas y reversión automática en caso de fallo.
+
+==== ¿Cuándo usar Docker Swarm?
+
+- Cuando necesitas desplegar aplicaciones en varios servidores de forma sencilla.
+- Para proyectos que requieren alta disponibilidad y balanceo de carga sin la complejidad de Kubernetes.
+- En entornos donde ya se utiliza Docker y se busca una solución de orquestación ligera y fácil de aprender.
+
+==== Conceptos clave
+
+- **Nodo**: Cada máquina (física o virtual) que forma parte del clúster Swarm.
+  - *Manager*: Nodo que gestiona el clúster y toma decisiones de orquestación.
+  - *Worker*: Nodo que ejecuta tareas asignadas por los managers.
+- **Servicio**: Definición de una aplicación o microservicio que se ejecuta en el clúster, compuesto por una o más réplicas (tareas).
+- **Tarea**: Instancia individual de un contenedor gestionado por Swarm.
+- **Overlay network**: Red virtual que conecta servicios en diferentes nodos del clúster.
+
+==== Ejemplo de flujo básico con Docker Swarm
+
+.Inicializar el clúster Swarm en el nodo principal:
+[source,sh]
+----
+docker swarm init
+----
+
+.Añadir nodos workers (el comando se muestra tras el init):
+[source,sh]
+----
+docker swarm join --token <token> <ip_manager>:2377
+----
+
+.Desplegar un servicio replicado:
+[source,sh]
+----
+docker service create --name web --replicas 3 -p 80:80 nginx
+----
+
+.Ver el estado del clúster y los servicios:
+[source,sh]
+----
+docker node ls
+docker service ls
+docker service ps web
+----
+
+=== Configuración de un clúster Swarm
+
+Configurar un clúster Docker Swarm te permite desplegar y gestionar aplicaciones distribuidas en varios hosts de forma sencilla y eficiente. A continuación se explica el proceso paso a paso, con ejemplos y buenas prácticas.
+
+==== Requisitos previos
+
+- Tener Docker instalado en todos los nodos (máquinas físicas o virtuales) que formarán parte del clúster.
+- Conectividad de red entre los nodos (puertos 2377, 7946 y 4789 abiertos entre ellos).
+- Permisos de administrador (root o usuario en el grupo docker).
+
+==== Inicializar el clúster Swarm
+
+.En el nodo que será el *manager* principal, ejecuta:
+[source,sh]
+----
+docker swarm init --advertise-addr <IP_MANAGER>
+----
+
+- `<IP_MANAGER>` es la IP del nodo manager accesible por los demás nodos.
+
+.El comando mostrará una línea similar a:
+[source,sh]
+----
+docker swarm join --token SWMTKN-1-xxxx <IP_MANAGER>:2377
+----
+
+Guarda este comando, lo necesitarás para unir los nodos workers.
+
+==== Añadir nodos workers al clúster
+
+.En cada nodo worker, ejecuta el comando `docker swarm join` proporcionado por el manager:
+[source,sh]
+----
+docker swarm join --token <TOKEN> <IP_MANAGER>:2377
+----
+
+- `<TOKEN>` es el token de autenticación generado por el manager.
+.Puedes obtener el token en cualquier momento con:
+[source,sh]
+----
+docker swarm join-token worker
+----
+
+==== Verificar el estado del clúster
+
+.En el nodo manager, revisa los nodos conectados:
+[source,sh]
+----
+docker node ls
+----
+
+Verás una lista de nodos con su rol (Manager/Worker) y estado.
+
+==== Añadir nodos manager adicionales (alta disponibilidad)
+
+.Para mayor tolerancia a fallos, puedes promover otros nodos a manager:
+[source,sh]
+----
+docker swarm join-token manager
+# Ejecuta el comando resultante en el nuevo nodo manager
+----
+
+.Para promover un nodo existente a manager:
+[source,sh]
+----
+docker node promote <NOMBRE_O_ID_DEL_NODO>
+----
+
+==== Configuración de redes overlay
+
+Swarm crea automáticamente una red overlay llamada `ingress` para el balanceo de carga. 
+
+.Puedes crear redes overlay personalizadas para aislar servicios:
+[source,sh]
+----
+docker network create --driver overlay mi_red_overlay
+----
+
+==== Buenas prácticas
+
+- Usa al menos 3 nodos manager para alta disponibilidad.
+- Mantén los tokens de join seguros; cámbialos si sospechas de un acceso no autorizado.
+- Supervisa el estado de los nodos y reemplaza los que fallen.
+- Documenta la topología y configuración del clúster.
+
+==== Resumen del flujo de configuración
+
+1. Instala Docker en todos los nodos.
+2. Inicializa el Swarm en el manager.
+3. Une los workers con el token.
+4. Verifica el clúster y promueve managers si es necesario.
+5. Crea redes overlay para tus servicios.
+
+Con estos pasos, tendrás un clúster Docker Swarm listo para desplegar servicios distribuidos, escalables y tolerantes a fallos.
+
+=== Gestión de servicios y tareas
+
+En Docker Swarm, los servicios y tareas son los elementos fundamentales para desplegar y gestionar aplicaciones distribuidas. Comprender cómo funcionan y cómo administrarlos es clave para sacar el máximo provecho de la orquestación nativa de Docker.
+
+==== ¿Qué es un servicio en Swarm?
+
+Un servicio es una definición declarativa de cómo debe ejecutarse una aplicación o microservicio en el clúster. Incluye la imagen, el número de réplicas, los puertos expuestos, variables de entorno, redes y volúmenes asociados.
+
+.Crear un servicio:
+[source,sh]
+----
+docker service create --name web --replicas 3 -p 80:80 nginx
+----
+
+Esto crea un servicio llamado `web` con 3 réplicas del contenedor nginx, balanceadas automáticamente entre los nodos del clúster.
+
+==== ¿Qué es una tarea?
+
+Una tarea es una instancia concreta de un contenedor gestionado por Swarm. Cada réplica de un servicio corresponde a una tarea, y Swarm se encarga de distribuirlas, reiniciarlas si fallan y mantener el estado deseado.
+
+==== Comandos esenciales para la gestión
+
+.**Listar servicios activos:**
+[source,sh]
+----
+docker service ls
+----
+
+.**Ver detalles y estado de las tareas de un servicio:**
+[source,sh]
+----
+docker service ps web
+----
+
+.**Escalar un servicio (cambiar el número de réplicas):**
+[source,sh]
+----
+docker service scale web=5
+----
+
+.**Actualizar la imagen o configuración de un servicio:**
+[source,sh]
+----
+docker service update --image nginx:alpine web
+----
+
+.**Eliminar un servicio:**
+[source,sh]
+----
+docker service rm web
+----
+
+==== Inspección y control avanzado
+
+.**Ver detalles completos de un servicio:**
+[source,sh]
+----
+docker service inspect web
+----
+
+.**Ver logs de un servicio:**
+[source,sh]
+----
+docker service logs web
+----
+
+.**Forzar el reinicio de todas las tareas de un servicio:**
+[source,sh]
+----
+docker service update --force web
+----
+
+==== Buenas prácticas
+
+- Define servicios con el número adecuado de réplicas para garantizar alta disponibilidad.
+- Usa políticas de actualización y reinicio para minimizar el downtime.
+- Supervisa el estado de las tareas y automatiza alertas ante fallos.
+- Documenta la configuración de cada servicio y su propósito en el clúster.
+
+=== Escalado y balanceo de carga
+
+El escalado y el balanceo de carga son dos de las principales ventajas de usar Docker Swarm para aplicaciones distribuidas. Permiten aumentar la capacidad de procesamiento y garantizar alta disponibilidad de los servicios, distribuyendo el tráfico de manera eficiente entre múltiples instancias.
+
+==== Escalado de servicios
+
+Docker Swarm permite escalar cualquier servicio de forma sencilla, aumentando o disminuyendo el número de réplicas (instancias de contenedores) que ejecutan ese servicio.
+
+.Escalar un servicio a 5 réplicas:
+[source,sh]
+----
+docker service scale web=5
+----
+
+.También puedes definir el número de réplicas al crear el servicio:
+[source,sh]
+----
+docker service create --name api --replicas 4 myimage
+----
+
+Swarm se encarga de distribuir las réplicas entre los nodos disponibles, reiniciar instancias fallidas y mantener el estado deseado.
+
+==== Balanceo de carga interno
+
+Swarm implementa un balanceador de carga interno que distribuye automáticamente las peticiones entrantes entre todas las réplicas de un servicio.
+
+- Cuando publicas un puerto (`-p 80:80`), Swarm expone el servicio en todos los nodos del clúster, no solo en el nodo donde corre el contenedor.
+- El tráfico recibido en ese puerto se enruta a cualquiera de las réplicas disponibles, usando la red overlay `ingress`.
+
+.Ejemplo:
+[source,sh]
+----
+docker service create --name web --replicas 3 -p 8080:80 nginx
+----
+
+Puedes acceder a `http://<ip_de_cualquier_nodo>:8080` y Swarm balanceará las peticiones entre las réplicas.
+
+==== Balanceo de carga externo
+
+Para entornos de producción, es habitual usar un balanceador de carga externo (como HAProxy, NGINX o un balanceador de la nube) delante del clúster Swarm para distribuir el tráfico entrante y gestionar SSL, reglas avanzadas, etc.
+
+==== Actualización dinámica del escalado
+
+Puedes aumentar o reducir el número de réplicas en cualquier momento, sin interrumpir el servicio:
+
+[source,sh]
+----
+docker service scale api=10
+docker service scale api=2
+----
+
+Swarm creará o eliminará tareas automáticamente para alcanzar el nuevo estado deseado.
+
+==== Ver el estado de las réplicas
+
+.Para comprobar cómo están distribuidas las tareas y su estado:
+[source,sh]
+----
+docker service ps web
+----
+
+==== Buenas prácticas
+
+- Escala los servicios críticos con al menos 2-3 réplicas para alta disponibilidad.
+- Supervisa el uso de recursos y ajusta el escalado según la demanda.
+- Usa políticas de actualización para evitar downtime durante cambios de versión.
+- Considera el uso de balanceadores externos para escenarios avanzados.
+
+=== Actualizaciones y rollbacks de servicios
+
+Docker Swarm permite actualizar servicios de manera controlada y segura, minimizando el downtime y facilitando la reversión (rollback) en caso de errores. Estas capacidades son esenciales para mantener la disponibilidad y la calidad en entornos de producción.
+
+==== Actualizaciones (Rolling Updates)
+
+Una actualización de servicio en Swarm reemplaza gradualmente las tareas (contenedores) antiguas por nuevas, siguiendo una política definida. Esto permite actualizar la imagen, variables de entorno, comandos, etc., sin interrumpir el servicio.
+
+.Ejemplo: actualizar la imagen de un servicio
+[source,sh]
+----
+docker service update --image nginx:alpine web
+----
+
+Por defecto, Swarm realiza la actualización de forma escalonada (rolling update), reemplazando las tareas una a una.
+
+.Parámetros útiles para controlar la actualización:
+- `--update-parallelism`: Número de tareas a actualizar simultáneamente.
+- `--update-delay`: Tiempo de espera entre actualizaciones de tareas.
+
+.Ejemplo: actualizar dos tareas a la vez, esperando 10 segundos entre cada lote
+[source,sh]
+----
+docker service update --image nginx:alpine --update-parallelism 2 --update-delay 10s web
+----
+
+==== Rollback (reversión de servicios)
+
+Si una actualización falla o se detecta un problema, Swarm permite revertir el servicio a la versión anterior automáticamente o bajo demanda.
+
+.Para forzar un rollback manual:
+[source,sh]
+----
+docker service rollback web
+----
+
+Swarm restaurará la configuración y la imagen previa del servicio.
+
+==== Políticas de actualización y rollback
+
+Puedes definir políticas para controlar el comportamiento ante fallos:
+
+- `--update-failure-action`: Qué hacer si falla una actualización (`pause`, `continue`, `rollback`).
+- `--rollback-parallelism` y `--rollback-delay`: Controlan la velocidad del rollback.
+
+.Ejemplo: pausar la actualización si falla alguna tarea
+[source,sh]
+----
+docker service update --update-failure-action pause web
+----
+
+==== Ver el historial y estado de actualizaciones
+
+.Para ver el historial de actualizaciones y el estado actual del servicio:
+[source,sh]
+----
+docker service inspect --pretty web
+docker service ps web
+----
+
+==== Buenas prácticas
+
+- Prueba las actualizaciones en entornos de staging antes de aplicarlas en producción.
+- Usa rolling updates para minimizar el downtime.
+- Supervisa el estado de las tareas durante la actualización.
+- Define políticas de rollback automáticas para servicios críticos.
+- Documenta los cambios y versiones desplegadas.
+
+=== Redes y volúmenes en Swarm
+
+Docker Swarm extiende el modelo de redes y volúmenes de Docker para soportar aplicaciones distribuidas en múltiples nodos, permitiendo la comunicación eficiente y la persistencia de datos en entornos de clúster.
+
+==== Redes en Swarm
+
+Swarm utiliza principalmente redes de tipo `overlay`, que permiten la comunicación entre servicios desplegados en diferentes nodos del clúster.
+
+- **Red overlay**: Red virtual que conecta contenedores en distintos hosts del clúster Swarm. Es ideal para microservicios y aplicaciones distribuidas.
+- **Red ingress**: Red overlay especial creada automáticamente por Swarm para el balanceo de carga de servicios publicados con puertos.
+
+.Crear una red overlay personalizada:
+[source,sh]
+----
+docker network create --driver overlay mi_red_overlay
+----
+
+.Asignar la red a un servicio:
+[source,sh]
+----
+docker service create --name web --network mi_red_overlay -p 8080:80 nginx
+----
+
+.Los servicios conectados a la misma red overlay pueden comunicarse usando el nombre del servicio como hostname, gracias al DNS interno de Swarm.
+
+==== Volúmenes en Swarm
+
+Swarm permite definir volúmenes para persistir datos de servicios, pero hay consideraciones importantes:
+
+- Los volúmenes locales (`local`) solo son accesibles desde el nodo donde se crean. Si una tarea se mueve a otro nodo, no tendrá acceso a los datos.
+- Para persistencia real y alta disponibilidad, utiliza drivers de volúmenes compatibles con almacenamiento compartido (NFS, GlusterFS, Amazon EFS, etc.).
+
+.Definir un volumen en un servicio Swarm:
+[source,yaml]
+----
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+volumes:
+  datos_pg:
+----
+
+.Crear un volumen con driver externo (ejemplo NFS):
+[source,sh]
+----
+docker volume create --driver local \
+  --opt type=nfs \
+  --opt o=addr=192.168.1.100,rw \
+  --opt device=:/ruta/nfs/datos \
+  datos_nfs
+----
+
+.Asignar el volumen a un servicio:
+[source,sh]
+----
+docker service create --name app --mount type=volume,source=datos_nfs,target=/app/datos myimage
+----
+
+==== Buenas prácticas
+
+- Usa redes overlay para conectar servicios distribuidos en el clúster.
+- Define redes separadas para aislar servicios según su función (frontend, backend, etc.).
+- Para datos críticos, utiliza volúmenes con almacenamiento compartido y redundante.
+- Documenta la topología de red y la estrategia de persistencia de tu aplicación Swarm.
+
+== Docker en Producción
+
+En este abordan las mejores prácticas, consideraciones y herramientas clave para ejecutar Docker en entornos de producción. El objetivo es garantizar la seguridad, el rendimiento, la escalabilidad y la observabilidad de las aplicaciones desplegadas con contenedores.
+
+=== Consideraciones de seguridad
+
+La seguridad es un aspecto crítico al ejecutar Docker en producción. Un enfoque proactivo ayuda a proteger tus aplicaciones, datos y la infraestructura subyacente. A continuación se presentan recomendaciones didácticas y estructuradas para fortalecer la seguridad en entornos Docker.
+
+==== Principio de mínimo privilegio
+
+- Ejecuta los contenedores con usuarios no root siempre que sea posible. Usa la instrucción `USER` en el Dockerfile.
+- Evita el uso de la opción `--privileged` salvo que sea estrictamente necesario.
+
+[source,dockerfile]
+----
+USER appuser
+----
+
+==== Actualización y escaneo de imágenes
+
+- Mantén las imágenes y dependencias actualizadas para evitar vulnerabilidades conocidas.
+- Utiliza herramientas de escaneo como `docker scan`, Trivy o Clair para analizar imágenes en busca de vulnerabilidades.
+
+.Ejemplo de escaneo de imagen:
+[source,sh]
+----
+docker scan miimagen:latest
+trivy image miimagen:latest
+----
+
+==== Reducción de superficie de ataque
+
+- Usa imágenes base minimalistas (`alpine`, `slim`) y elimina herramientas innecesarias.
+- Elimina paquetes y archivos temporales tras la instalación de dependencias.
+
+==== Gestión segura de secretos
+
+- No almacenes contraseñas, claves o secretos en imágenes ni variables de entorno.
+- Utiliza Docker Secrets, gestores externos (Vault, AWS Secrets Manager) o archivos montados en tiempo de ejecución.
+
+.Ejemplo de uso de Docker Secrets:
+[source,sh]
+----
+echo "mi_secreto" | docker secret create db_password -
+----
+
+==== Aislamiento de redes y servicios
+
+- Separa servicios críticos en redes personalizadas y limita la exposición de puertos.
+- Usa firewalls y reglas de red para restringir el acceso entre servicios y desde el exterior.
+
+.Ejemplo de creación de una red personalizada:
+[source,sh]
+----
+docker network create backend
+docker run -d --name db --network backend postgres
+----
+
+==== Control de acceso y auditoría
+
+- Configura roles y permisos en el host y en los registros de imágenes (Docker Hub, registries privados).
+- Habilita la auditoría de eventos y accesos al daemon Docker.
+
+==== Protección del daemon Docker
+
+- No expongas el socket Docker (`/var/run/docker.sock`) a contenedores o usuarios no autorizados.
+- Si necesitas acceso remoto, usa TLS para cifrar la comunicación.
+
+==== Actualización y parches del host
+
+- Mantén el sistema operativo y Docker Engine actualizados con los últimos parches de seguridad.
+- Usa mecanismos de seguridad del sistema operativo como AppArmor, SELinux o seccomp.
+
+==== Buenas prácticas adicionales
+
+- Elimina imágenes, contenedores y volúmenes no utilizados para reducir riesgos.
+- Usa etiquetas y versionado para identificar imágenes seguras y aprobadas.
+- Documenta y revisa periódicamente la política de seguridad de tus despliegues Docker.
+
+=== Rendimiento y escalabilidad
+
+Garantizar el rendimiento y la escalabilidad de aplicaciones en Docker es esencial para entornos de producción. A continuación se presentan estrategias, recomendaciones y ejemplos prácticos para optimizar el uso de recursos y escalar servicios de manera eficiente.
+
+==== Optimización de imágenes
+
+- Usa imágenes base ligeras (`alpine`, `slim`) para reducir el tamaño y acelerar despliegues.
+- Minimiza el número de capas en el Dockerfile agrupando comandos RUN.
+- Elimina archivos temporales y dependencias de desarrollo tras la instalación.
+- Utiliza multi-stage builds para separar la construcción y la ejecución.
+
+==== Asignación y limitación de recursos
+
+- Limita el uso de CPU y memoria de los contenedores para evitar que un servicio consuma todos los recursos del host.
+- Usa las opciones `--cpus`, `--memory` y `--memory-swap` en `docker run` o en la sección `deploy.resources` de Docker Compose/Swarm.
+
+.Ejemplo:
+[source,sh]
+----
+docker run -d --name app --cpus="1.5" --memory="512m" myimage
+----
+
+.En Compose (Swarm):
+[source,yaml]
+----
+deploy:
+  resources:
+    limits:
+      cpus: '1.0'
+      memory: 512M
+    reservations:
+      cpus: '0.5'
+      memory: 256M
+----
+
+==== Escalabilidad horizontal
+
+- Escala servicios ejecutando múltiples réplicas de un mismo contenedor.
+- Usa orquestadores como Docker Swarm o Kubernetes para gestionar el escalado automático y el balanceo de carga.
+
+.Ejemplo en Swarm:
+[source,sh]
+----
+docker service scale web=5
+----
+
+==== Almacenamiento eficiente
+
+- Usa volúmenes gestionados por Docker o soluciones externas para datos persistentes.
+- Monitoriza el uso de disco y realiza limpieza periódica de imágenes y volúmenes no utilizados.
+
+==== Redes y comunicación
+
+- Usa redes personalizadas para aislar servicios y optimizar el tráfico interno.
+- Minimiza la latencia conectando servicios relacionados en la misma red Docker.
+
+==== Monitorización y ajuste de recursos
+
+- Utiliza `docker stats` para monitorizar el consumo de recursos en tiempo real.
+- Integra herramientas como Prometheus y Grafana para métricas avanzadas y alertas.
+
+==== Buenas prácticas
+
+- Realiza pruebas de carga y estrés para identificar cuellos de botella.
+- Ajusta los límites de recursos según el comportamiento real de la aplicación.
+- Documenta la configuración de recursos y escalabilidad para cada servicio.
+- Automatiza el escalado y la recuperación ante fallos con orquestadores.
+
+=== Monitorización y logging
+
+La monitorización y el registro centralizado de logs son fundamentales para garantizar la observabilidad, el diagnóstico y la operación eficiente de aplicaciones en producción con Docker. A continuación se presentan estrategias, herramientas y buenas prácticas para monitorizar y gestionar logs en entornos de contenedores.
+
+==== Monitorización de contenedores
+
+- Utiliza `docker stats` para ver el uso de CPU, memoria, red y disco en tiempo real.
+- Integra herramientas como **Prometheus** y **Grafana** para recolectar y visualizar métricas avanzadas de contenedores, hosts y servicios.
+- Considera soluciones como **cAdvisor** para monitorizar recursos a nivel de contenedor.
+
+.Ejemplo de integración con Prometheus:
+- Despliega el exporter de Docker para Prometheus.
+- Configura Prometheus para recolectar métricas del endpoint del exporter.
+- Visualiza las métricas en Grafana mediante dashboards personalizados.
+
+==== Logging de contenedores
+
+- Por defecto, Docker almacena los logs de los contenedores en archivos JSON en el host.
+.Puedes ver los logs con:
+[source,sh]
+----
+docker logs <nombre_o_id_contenedor>
+----
+
+.Para aplicaciones multicontenedor, usa:
+[source,sh]
+----
+docker-compose logs
+----
+
+==== Centralización de logs
+
+- Redirige los logs a sistemas centralizados como **ELK Stack** (Elasticsearch, Logstash, Kibana), **Loki**, **Fluentd** o servicios cloud.
+- Configura el driver de logging de Docker (`--log-driver`) para enviar los logs directamente a la solución elegida.
+
+.Ejemplo para usar Fluentd:
+[source,sh]
+----
+docker run --log-driver=fluentd myimage
+----
+
+==== Buenas prácticas de monitorización y logging
+
+- Define alertas para eventos críticos (caída de servicios, uso excesivo de recursos, errores de aplicación).
+- Mantén políticas de retención y rotación de logs para evitar llenar el disco.
+- Documenta los procedimientos de acceso y análisis de logs para el equipo.
+- Integra la monitorización y logging en tus pipelines de CI/CD para detectar problemas tempranamente.
+
+==== Ejemplo de stack de monitorización y logging
+
+- **Prometheus + Grafana**: Métricas y visualización.
+- **ELK Stack**: Centralización, búsqueda y visualización de logs.
+- **Loki + Grafana**: Logs ligeros y escalables para entornos de contenedores.
+
+=== Estrategias de despliegue
+
+El despliegue de aplicaciones en contenedores Docker en producción requiere estrategias que garanticen disponibilidad, mínima interrupción y facilidad de recuperación ante fallos. A continuación se presentan las principales estrategias de despliegue y recomendaciones para entornos reales.
+
+==== Despliegue tradicional (stop & start)
+
+- Detener la versión antigua y arrancar la nueva.
+- Sencillo pero implica downtime y no es recomendable para servicios críticos.
+
+==== Rolling Update (actualización escalonada)
+
+- Actualiza gradualmente las instancias del servicio, reemplazando contenedores antiguos por nuevos sin detener todo el sistema.
+- Soportado nativamente por Docker Swarm y Kubernetes.
+- Permite controlar el número de instancias actualizadas simultáneamente y el tiempo de espera entre actualizaciones.
+
+.Ejemplo en Swarm:
+[source,sh]
+----
+docker service update --image miapp:v2 --update-parallelism 2 --update-delay 10s web
+----
+
+==== Blue/Green Deployment
+
+- Mantiene dos entornos idénticos: uno activo (blue) y otro inactivo (green).
+- Se despliega la nueva versión en el entorno inactivo y, tras las pruebas, se redirige el tráfico al nuevo entorno.
+- Permite rollback inmediato si hay problemas.
+
+==== Canary Deployment
+
+- Despliega la nueva versión solo a un pequeño porcentaje de usuarios o tráfico.
+- Permite validar la nueva versión en producción antes de un despliegue completo.
+- Requiere balanceadores de carga o herramientas de orquestación avanzadas.
+
+==== Zero Downtime Deployment
+
+- Estrategias y herramientas que aseguran que no haya interrupción del servicio durante el despliegue.
+- Utiliza rolling updates, balanceadores de carga y readiness checks para garantizar la disponibilidad.
+
+==== Automatización del despliegue
+
+- Integra Docker en pipelines de CI/CD para automatizar builds, tests y despliegues.
+- Usa herramientas como Jenkins, GitHub Actions, GitLab CI, ArgoCD, etc.
+
+==== Buenas prácticas
+
+- Versiona y etiqueta todas las imágenes desplegadas.
+- Realiza pruebas en entornos de staging antes de producción.
+- Supervisa el despliegue y define alertas ante fallos.
+- Documenta el proceso y los comandos de despliegue.
+- Prepara procedimientos de rollback claros y probados.
+
+=== Docker Swarm (orquestación básica)
+
+Docker Swarm es la solución de orquestación nativa de Docker que permite gestionar clústeres de contenedores de forma sencilla y eficiente. Swarm facilita el despliegue, escalado, balanceo de carga y alta disponibilidad de aplicaciones distribuidas en múltiples hosts.
+
+==== Características principales
+
+- Orquestación integrada en Docker Engine.
+- Gestión de clústeres con nodos manager y worker.
+- Despliegue de servicios replicados y globales.
+- Balanceo de carga interno y descubrimiento de servicios.
+- Rolling updates y rollbacks automáticos.
+- Redes overlay para comunicación entre servicios en diferentes nodos.
+- Gestión de secretos y configuración segura.
+
+==== Flujo básico de uso
+
+.**Inicializar el clúster Swarm** en el nodo manager:
+[source,sh]
+----
+docker swarm init
+----
+
+.**Unir nodos workers** al clúster:
+[source,sh]
+----
+docker swarm join --token <token> <ip_manager>:2377
+----
+
+.**Desplegar un servicio replicado**:
+[source,sh]
+----
+docker service create --name web --replicas 3 -p 80:80 nginx
+----
+
+.**Escalar servicios**:
+[source,sh]
+----
+docker service scale web=5
+----
+
+.**Actualizar servicios con rolling update**:
+[source,sh]
+----
+docker service update --image nginx:alpine web
+----
+
+.**Ver el estado del clúster y servicios**:
+[source,sh]
+----
+docker node ls
+docker service ls
+docker service ps web
+----
+
+==== Buenas prácticas
+
+- Usa al menos 3 nodos manager para alta disponibilidad.
+- Mantén los tokens de join seguros.
+- Utiliza redes overlay para aislar servicios.
+- Supervisa el estado de los nodos y servicios regularmente.
+- Documenta la topología y configuración del clúster.
+
+== Integración Continua y Entrega Continua (CI/CD)
+
+La Integración Continua (CI) y la Entrega Continua (CD) son prácticas clave en el desarrollo moderno de software, permitiendo automatizar la construcción, prueba y despliegue de aplicaciones. Docker facilita la implementación de pipelines CI/CD eficientes, reproducibles y portables.
+
+=== Docker en pipelines de CI/CD
+
+Docker es una herramienta fundamental en los pipelines de Integración Continua (CI) y Entrega Continua (CD), ya que permite construir, probar y desplegar aplicaciones en entornos consistentes y reproducibles.
+
+==== Ventajas de usar Docker en CI/CD
+
+- Elimina el clásico "en mi máquina funciona" al garantizar entornos idénticos en desarrollo, pruebas y producción.
+- Permite empaquetar la aplicación y sus dependencias en una imagen inmutable.
+- Facilita la ejecución de pruebas automatizadas en contenedores aislados.
+- Acelera la entrega de nuevas versiones mediante despliegues automáticos y controlados.
+
+==== Flujo típico de un pipeline CI/CD con Docker
+
+1. **Build**: Construcción de la imagen Docker a partir del código fuente y el Dockerfile.
+2. **Test**: Ejecución de pruebas unitarias, de integración o end-to-end dentro de contenedores.
+3. **Push**: Publicación de la imagen en un registro (Docker Hub, GitHub Container Registry, etc.).
+4. **Deploy**: Despliegue automático de la imagen en entornos de staging o producción.
+
+==== Ejemplo básico de pipeline (pseudocódigo)
+
+[source,yaml]
+----
+# Ejemplo simplificado de pasos en un pipeline CI/CD
+steps:
+  - name: Checkout código
+    run: git clone <repo>
+  - name: Build imagen
+    run: docker build -t usuario/app:latest .
+  - name: Test
+    run: docker run --rm usuario/app:latest pytest
+  - name: Push a registro
+    run: docker push usuario/app:latest
+  - name: Deploy
+    run: kubectl set image deployment/app app=usuario/app:latest
+----
+
+==== Integración con herramientas populares
+
+- **Jenkins**: Usa plugins oficiales para construir y publicar imágenes Docker.
+- **GitHub Actions**: Permite definir workflows YAML para automatizar builds, tests y despliegues con Docker.
+- **GitLab CI**: Incluye runners con soporte nativo para Docker.
+- **Azure Pipelines, CircleCI, Travis CI**: Todos soportan pasos con Docker.
+
+==== Buenas prácticas
+
+- Versiona las imágenes usando tags únicos (por commit, rama o versión).
+- Usa archivos `.dockerignore` para optimizar el contexto de build.
+- Realiza pruebas en contenedores idénticos a los de producción.
+- Elimina imágenes y contenedores temporales al finalizar los jobs para ahorrar espacio.
+
+=== Automatización de builds y tests
+
+Automatizar la construcción de imágenes y la ejecución de pruebas es una de las principales ventajas de integrar Docker en pipelines de CI/CD. Esto garantiza que cada cambio en el código pase por un proceso reproducible y controlado antes de ser desplegado.
+
+==== Build automatizado de imágenes
+
+- Configura tu pipeline para construir la imagen Docker en cada push o pull request.
+- Usa archivos `.dockerignore` para optimizar el contexto de build y reducir tiempos.
+
+.Ejemplo de build en un pipeline:
+[source,sh]
+----
+docker build -t usuario/app:${GITHUB_SHA} .
+----
+
+==== Ejecución de tests en contenedores
+
+- Ejecuta pruebas unitarias, de integración o end-to-end dentro de contenedores para asegurar que el entorno es idéntico al de producción.
+- Puedes usar el mismo contenedor que se desplegará o uno específico para testing.
+
+.Ejemplo de ejecución de tests:
+[source,sh]
+----
+docker run --rm usuario/app:${GITHUB_SHA} pytest
+----
+
+.O bien, usando docker-compose para levantar servicios dependientes:
+[source,sh]
+----
+docker-compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from app
+----
+
+==== Limpieza automática
+
+.Elimina imágenes y contenedores temporales al finalizar los jobs para ahorrar espacio y evitar acumulación de recursos.
+[source,sh]
+----
+docker system prune -af
+----
+
+==== Buenas prácticas
+
+- Versiona las imágenes con el hash del commit o número de build.
+- Separa los pasos de build y test para facilitar la depuración.
+- Falla rápido: detén el pipeline ante el primer error.
+- Integra los resultados de los tests en el sistema de reportes del pipeline.
+
+==== Ejemplo de workflow en GitHub Actions
+
+.Un ejemplo de workflow en GitHub Actions para construir y probar una imagen Docker:
+[source,yaml]
+----
+name: CI Docker Build & Test
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t usuario/app:${{ github.sha }} .
+      - name: Run tests
+        run: docker run --rm usuario/app:${{ github.sha }} pytest
+      - name: Clean up
+        run: docker system prune -af
+----
+
+=== Despliegue automático de contenedores
+
+El despliegue automático de contenedores es una práctica esencial en pipelines de CI/CD modernos. Permite que, tras la construcción y prueba de una imagen Docker, esta se despliegue automáticamente en entornos de staging o producción, reduciendo errores manuales y acelerando la entrega de software.
+
+==== Flujo típico de despliegue automático
+
+1. **Build y push de la imagen**: El pipeline construye la imagen y la publica en un registro (Docker Hub, GitHub Container Registry, etc.).
+2. **Despliegue automático**: Un paso del pipeline o un sistema de automatización detecta la nueva imagen y actualiza el entorno de destino.
+
+==== Ejemplo de despliegue automático con Docker Compose
+
+.Puedes actualizar servicios en un servidor remoto usando SSH y Docker Compose:
+[source,yaml]
+----
+- name: Deploy en servidor remoto
+  run: |
+    ssh usuario@servidor "
+      cd /ruta/app &&
+      docker-compose pull &&
+      docker-compose up -d
+    "
+----
+
+==== Ejemplo de despliegue automático en Swarm
+
+.Actualiza un servicio en Swarm con la nueva imagen:
+[source,sh]
+----
+docker service update --image usuario/app:latest mi_servicio
+----
+
+==== Integración con pipelines CI/CD
+
+- Usa herramientas como GitHub Actions, GitLab CI, Jenkins, etc., para automatizar el despliegue tras el push de la imagen.
+- Puedes usar acciones específicas o scripts personalizados para conectar el pipeline con tu infraestructura.
+
+==== Buenas prácticas
+
+- Versiona las imágenes y usa tags únicos para cada despliegue.
+- Realiza despliegues primero en entornos de staging antes de producción.
+- Automatiza pruebas post-despliegue para validar el estado de la aplicación.
+- Documenta y revisa los procesos de despliegue automático.
+
+=== Integración con herramientas como Jenkins, GitHub Actions, etc.
+
+La integración de Docker en herramientas de CI/CD como Jenkins, GitHub Actions, GitLab CI, Azure Pipelines y otras, permite automatizar todo el ciclo de vida de las aplicaciones: construcción, pruebas, publicación y despliegue de imágenes.
+
+==== Jenkins
+
+- Usa el plugin oficial de Docker para construir, etiquetar y publicar imágenes desde pipelines declarativos (Jenkinsfile).
+- Permite ejecutar pasos de build y test en contenedores aislados usando agentes Docker.
+
+.Ejemplo de etapa en Jenkinsfile:
+[source,groovy]
+----
+pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        script {
+          docker.build("usuario/app:${env.BUILD_NUMBER}")
+        }
+      }
+    }
+    stage('Test') {
+      steps {
+        sh 'docker run --rm usuario/app:${BUILD_NUMBER} pytest'
+      }
+    }
+    stage('Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+          sh 'echo $PASS | docker login -u $USER --password-stdin'
+          sh 'docker push usuario/app:${BUILD_NUMBER}'
+        }
+      }
+    }
+  }
+}
+----
+
+==== GitHub Actions
+
+- Permite definir workflows YAML para construir, probar y desplegar imágenes Docker en cada push o pull request.
+- Incluye acciones oficiales para login, build y push a Docker Hub o GitHub Container Registry.
+
+.Ejemplo de workflow:
+[source,yaml]
+----
+name: CI/CD Docker
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t usuario/app:${{ github.sha }} .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+      - name: Push image
+        run: docker push usuario/app:${{ github.sha }}
+----
+
+==== GitLab CI
+
+- Incluye runners con soporte nativo para Docker.
+- Permite definir pipelines en `.gitlab-ci.yml` para build, test y deploy de imágenes.
+
+.Ejemplo de job:
+[source,yaml]
+----
+build:
+  stage: build
+  script:
+    - docker build -t registry.gitlab.com/usuario/app:$CI_COMMIT_SHA .
+    - docker push registry.gitlab.com/usuario/app:$CI_COMMIT_SHA
+----
+
+==== Otras herramientas
+
+- **Azure Pipelines, CircleCI, Travis CI**: Todos soportan pasos con Docker para build, test y despliegue.
+- Puedes usar scripts personalizados o extensiones oficiales según la plataforma.
+
+==== Buenas prácticas
+
+- Usa variables y secretos seguros para credenciales de registro.
+- Versiona las imágenes con el hash del commit o número de build.
+- Automatiza pruebas y despliegues para cada cambio relevante.
+- Limpia recursos temporales al finalizar los jobs.
+
+== Recursos Adicionales
+
+=== Documentación oficial
+
+- [Documentación oficial de Docker](https://docs.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Docker Swarm](https://docs.docker.com/engine/swarm/)
+- [Dockerfile reference](https://docs.docker.com/engine/reference/builder/)
+- [Docker Hub](https://hub.docker.com/)
+
+=== Comunidad y soporte
+
+- [Foros de Docker](https://forums.docker.com/)
+- [Stack Overflow: docker](https://stackoverflow.com/questions/tagged/docker)
+- [GitHub de Docker](https://github.com/docker)
+- [Docker Community Slack](https://www.docker.com/slack)
+
+=== Herramientas complementarias
+
+- [Portainer](https://www.portainer.io/): Interfaz gráfica para gestión de contenedores y clústeres Docker.
+- [Dive](https://github.com/wagoodman/dive): Analizador de capas de imágenes Docker.
+- [Trivy](https://github.com/aquasecurity/trivy): Escáner de vulnerabilidades para imágenes.
+- [cAdvisor](https://github.com/google/cadvisor): Monitorización de recursos de contenedores.
+- [ELK Stack](https://www.elastic.co/what-is/elk-stack): Centralización y análisis de logs.
+- [Prometheus & Grafana](https://prometheus.io/): Monitorización y visualización de métricas.
+
+=== Tendencias y futuro de Docker
+
+- Integración con Kubernetes y otros orquestadores.
+- Contenedores rootless y mayor enfoque en seguridad.
+- Imágenes aún más ligeras y optimizadas.
+- Automatización avanzada en CI/CD y GitOps.
+- Expansión de Docker Desktop y herramientas para desarrolladores.
+- Mayor adopción de arquitecturas serverless y microservicios basados en contenedores.
