@@ -717,13 +717,25 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="paragraph">
 <p>Docker es una plataforma de software que permite crear, probar y desplegar aplicaciones rápidamente mediante el uso de contenedores, que son unidades ligeras y portátiles que incluyen todo lo necesario para ejecutar una aplicación: código, bibliotecas, herramientas del sistema y dependencias. Los contenedores se ejecutan de forma aislada sobre el sistema operativo anfitrión, lo que garantiza portabilidad y consistencia entre entornos de desarrollo, pruebas y producción.</p>
 </div>
-<div class="paragraph">
-<p>Principales conceptos de Docker:
-- <strong>Imagen (Image):</strong> Plantilla de solo lectura que contiene el sistema operativo, las dependencias y el código necesario para ejecutar una aplicación. Las imágenes pueden almacenarse y compartirse mediante registros como Docker Hub.
-- <strong>Contenedor (Container):</strong> Instancia en ejecución de una imagen. Los contenedores son efímeros y ligeros, y pueden ejecutarse, detenerse, reiniciarse o eliminarse fácilmente.
-- <strong>Registro (Registry):</strong> Repositorio donde se almacenan y distribuyen imágenes de Docker, permitiendo compartirlas entre equipos y automatizar despliegues.
-- <strong>Volumen (Volume):</strong> Mecanismo para persistir datos fuera del ciclo de vida del contenedor, evitando la pérdida de información al eliminar o reiniciar contenedores.
-- <strong>Red (Network):</strong> Sistema que permite la comunicación entre contenedores y con el exterior, facilitando la construcción de aplicaciones distribuidas.</p>
+<div class="ulist">
+<div class="title">Principales conceptos de Docke:</div>
+<ul>
+<li>
+<p><strong>Imagen (Image):</strong> Plantilla de solo lectura que contiene el sistema operativo, las dependencias y el código necesario para ejecutar una aplicación. Las imágenes pueden almacenarse y compartirse mediante registros como Docker Hub.</p>
+</li>
+<li>
+<p><strong>Contenedor (Container):</strong> Instancia en ejecución de una imagen. Los contenedores son efímeros y ligeros, y pueden ejecutarse, detenerse, reiniciarse o eliminarse fácilmente.</p>
+</li>
+<li>
+<p><strong>Registro (Registry):</strong> Repositorio donde se almacenan y distribuyen imágenes de Docker, permitiendo compartirlas entre equipos y automatizar despliegues.</p>
+</li>
+<li>
+<p><strong>Volumen (Volume):</strong> Mecanismo para persistir datos fuera del ciclo de vida del contenedor, evitando la pérdida de información al eliminar o reiniciar contenedores.</p>
+</li>
+<li>
+<p><strong>Red (Network):</strong> Sistema que permite la comunicación entre contenedores y con el exterior, facilitando la construcción de aplicaciones distribuidas.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect3">
@@ -1591,13 +1603,13 @@ crc start</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>[Documentación oficial CRC|https://crc.dev/docs/]</p>
+<p>Documentación oficial CRC [<a href="https://crc.dev/docs/" class="bare">https://crc.dev/docs/</a>]</p>
 </li>
 <li>
-<p>[Guía de operadores|https://es.linkedin.com/pulse/gu%C3%ADa-para-configurar-openshift-crc-y-operadores-base-meza-kranc]</p>
+<p>Guía de operadores [<a href="https://es.linkedin.com/pulse/gu%C3%ADa-para-configurar-openshift-crc-y-operadores-base-meza-kranc" class="bare">https://es.linkedin.com/pulse/gu%C3%ADa-para-configurar-openshift-crc-y-operadores-base-meza-kranc</a>]</p>
 </li>
 <li>
-<p>[Troubleshooting avanzado|https://dev.to/khurammurad/how-to-set-up-openshift-local-crc-on-ubuntu-a-developers-guide-le2]</p>
+<p>Troubleshooting avanzado [<a href="https://dev.to/khurammurad/how-to-set-up-openshift-local-crc-on-ubuntu-a-developers-guide-le2" class="bare">https://dev.to/khurammurad/how-to-set-up-openshift-local-crc-on-ubuntu-a-developers-guide-le2</a>]</p>
 </li>
 </ol>
 </div>
@@ -1835,10 +1847,11 @@ oc new-project mi-proyecto</code></pre>
 oc new-app --name=nodejs-app https://github.com/galvarado/node-app-openshift-example.git
 
 # Opción 2: Subir imagen personalizada
-podman build -t nodejs-demo .
-podman tag nodejs-demo &lt;registry_route&gt;/mi-proyecto/nodejs-demo
-podman push &lt;registry_route&gt;/mi-proyecto/nodejs-demo
-oc new-app --name=nodejs-app --image=&lt;registry_route&gt;/mi-proyecto/nodejs-demo</code></pre>
+docker build -t nodejs-demo .
+docker tag nodejs-demo &lt;registry_route&gt;/mi-proyecto/nodejs-demo
+REGISTRY=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
+docker push $REGISTRY/mi-proyecto/nodejs-demo
+oc new-app --name=nodejs-app --image=$REGISTRY/mi-proyecto/nodejs-demo</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1872,22 +1885,56 @@ curl http://$(oc get route mi-ruta -o jsonpath='{.spec.host}')</code></pre>
 <div class="sect2">
 <h3 id="_recursos_avanzados">Recursos avanzados</h3>
 <div class="paragraph">
-<p><strong>DeploymentConfig vs Deployment</strong>:
-| Característica          | DeploymentConfig           | Deployment (Kubernetes)     |
-|-------------------------|----------------------------|------------------------------|
-| Estrategias despliegue  | Personalizables           | Estándar                     |
-| Triggers                | Configurables             | Limitados                    |
-| Rollback                | <code>oc rollback</code> nativo      | Requiere revisiones manuales |
-| Historial               | Mantiene revisiones       | Limitado                     |</p>
+<p><strong>DeploymentConfig vs Deployment</strong>:</p>
 </div>
-<div class="paragraph">
-<p><strong>Despliegues Serverless</strong>:
-- Escalado automático a cero
-- Configuración básica:</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Característica</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DeploymentConfig</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment (Kubernetes)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Estrategias despliegue</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Personalizables</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Estándar</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Triggers</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configurables</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Limitados</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rollback</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>oc rollback</code> nativo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requiere revisiones manuales</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Historial</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mantiene revisiones</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Limitado</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<div class="title"><strong>Despliegues Serverless</strong>:</div>
+<ul>
+<li>
+<p>Escalado automático a cero</p>
+</li>
+<li>
+<p>Configuración básica:</p>
+</li>
+</ul>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: serving.knative.dev/v1
+<pre>apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: serverless-app
@@ -1895,7 +1942,7 @@ spec:
   template:
     spec:
       containers:
-        - image: docker.io/library/nodejs-demo</code></pre>
+        - image: docker.io/library/nodejs-demo</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2011,7 +2058,7 @@ oc rsh &lt;pod&gt; curl -v http://&lt;servicio&gt;:&lt;puerto&gt;</code></pre>
 </ul>
 </div>
 <div class="listingblock">
-<div class="title">Ejemplo de <code>BuildConfig</code> usando un Dockerfile desde un repositorio Git:</div>
+<div class="title">Ejemplo de <code>BuildConfig</code> usando un Dockerfile desde un repositorio Git, podemos definirlo de la siguiente manera en un archivo YAML con el nombre <code>buildconfig.yaml</code>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -2031,6 +2078,12 @@ spec:
     to:
       kind: ImageStreamTag
       name: mi-aplicacion:latest</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Para ejecutar el buildconfig y construir la imagen, puedes usar el siguiente comando en la CLI de OpenShift:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc create -f buildconfig.yaml</code></pre>
 </div>
 </div>
 <div class="ulist">
@@ -2103,16 +2156,22 @@ spec:
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_openshift_pipelines_tekton">OpenShift Pipelines (Tekton)</h3>
-<div class="paragraph">
-<p><strong>Arquitectura basada en Kubernetes</strong>:
-- <code>Tasks</code>: Pasos reutilizables (build, test, deploy)
-- <code>Pipelines</code>: Orquestación de múltiples <code>Tasks</code>
-- <code>PipelineRuns</code>: Ejecuciones concretas de pipelines</p>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo de pipeline completo</strong>:</p>
+<div class="ulist">
+<div class="title"><strong>Arquitectura basada en Kubernetes</strong>:</div>
+<ul>
+<li>
+<p><code>Tasks</code>: Pasos reutilizables (build, test, deploy)</p>
+</li>
+<li>
+<p><code>Pipelines</code>: Orquestación de múltiples <code>Tasks</code></p>
+</li>
+<li>
+<p><code>PipelineRuns</code>: Ejecuciones concretas de pipelines, con parámetros y recursos específicos</p>
+</li>
+</ul>
 </div>
 <div class="listingblock">
+<div class="title"><strong>Ejemplo de pipeline completo</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
 kind: Pipeline
@@ -2136,19 +2195,61 @@ spec:
             oc set triggers deployment/vote-ui --auto</code></pre>
 </div>
 </div>
+<div class="listingblock">
+<div class="title">Para ejecutar el pipeline, con el siguiente comando:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">tkn pipeline start vote-app-pipeline --showlog</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ejemplo de PipelineRun con nombre de archivo: <code>build-and-deploy.yaml</code>:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-and-deploy-run-001
+spec:
+  pipelineRef:
+    name: build-and-deploy
+  params:
+    - name: deployment-name
+      value: mi-aplicacion
+  workspaces:
+    - name: shared-workspace
+      persistentVolumeClaim:
+        claimName: mi-pvc
+  serviceAccountName: pipeline
+  timeout: "1h0m0s"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Para iniciar el PipelineRun, usa:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">tkn pipeline start build-and-deploy \
+  -p deployment-name=mi-aplicacion \
+  -w name=shared-workspace,claimName=mi-pvc \
+  --use-param-defaults</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_integración_con_gitops_argo_cd">Integración con GitOps (Argo CD)</h3>
-<div class="paragraph">
-<p><strong>Patrón de implementación</strong>:
-1. Cambios en Git desencadenan pipelines
-2. Pipeline actualiza manifiestos en repositorio GitOps
-3. Argo CD sincroniza estado con clúster</p>
-</div>
-<div class="paragraph">
-<p><strong>Configuración básica</strong>:</p>
+<div class="olist arabic">
+<div class="title"><strong>Patrón de implementación</strong>:</div>
+<ol class="arabic">
+<li>
+<p>Cambios en Git desencadenan pipelines</p>
+</li>
+<li>
+<p>Pipeline actualiza manifiestos en repositorio GitOps</p>
+</li>
+<li>
+<p>Argo CD sincroniza estado con clúster</p>
+</li>
+</ol>
 </div>
 <div class="listingblock">
+<div class="title"><strong>Configuración básica</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -2171,16 +2272,22 @@ spec:
 </div>
 <div class="sect2">
 <h3 id="_automatización_con_ansible">Automatización con Ansible</h3>
-<div class="paragraph">
-<p><strong>Flujo de automatización</strong>:
-1. Conexión a API de OpenShift
-2. Ejecución de playbooks para gestión de recursos
-3. Despliegue declarativo con colecciones certificadas</p>
-</div>
-<div class="paragraph">
-<p><strong>Playbook de ejemplo</strong>:</p>
+<div class="olist arabic">
+<div class="title"><strong>Flujo de automatización</strong>:</div>
+<ol class="arabic">
+<li>
+<p>Conexión a API de OpenShift</p>
+</li>
+<li>
+<p>Ejecución de playbooks para gestión de recursos</p>
+</li>
+<li>
+<p>Despliegue declarativo con colecciones certificadas</p>
+</li>
+</ol>
 </div>
 <div class="listingblock">
+<div class="title"><strong>Playbook de ejemplo</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">- name: Deploy Redis application
   hosts: localhost
@@ -2198,10 +2305,8 @@ spec:
 </div>
 <div class="sect2">
 <h3 id="_plantillas_de_pipelines_comunes">Plantillas de pipelines comunes</h3>
-<div class="paragraph">
-<p><strong>Pipeline multi-etapa</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Pipeline multi-etapa</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-graph LR" data-lang="graph LR">A[CI Build] --&gt; B(Unit Tests)
 B --&gt; C{SonarQube Scan}
@@ -2212,10 +2317,8 @@ F --&gt; G{Promote to QA?}
 G --&gt;|Yes| H[Deploy to QA]</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p><strong>Pipeline serverless</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Pipeline serverless</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">spec:
   tasks:
@@ -2233,16 +2336,10 @@ G --&gt;|Yes| H[Deploy to QA]</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_mejores_prácticas_2">Mejores prácticas</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Gestión de secretos</strong>:</p>
-</li>
-</ol>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Gestión de secretos</strong>:</div>
 <div class="content">
-<pre>oc create secret generic git-creds --type=kubernetes.io/basic-auth --from-literal=username=&lt;user&gt; --from-literal=password=&lt;token&gt;</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc create secret generic git-creds --type=kubernetes.io/basic-auth --from-literal=username=&lt;user&gt; --from-literal=password=&lt;token&gt;</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -2271,7 +2368,7 @@ tkn pipeline describe vote-app-pipeline</code></pre>
 <h3 id="_solución_de_problemas">Solución de problemas</h3>
 <div class="paragraph">
 <p><strong>Problema común</strong>: Fallos en montaje de volúmenes
-<strong>Solución</strong>:</p>
+.<strong>Solución</strong>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2341,10 +2438,8 @@ tkn pipeline describe vote-app-pipeline</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_ejemplo_de_configuración">Ejemplo de configuración</h3>
-<div class="paragraph">
-<p><strong>Definición de StorageClass</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Definición de StorageClass</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -2358,10 +2453,8 @@ parameters:
 <div class="paragraph">
 <p>En este ejemplo, se define una clase de almacenamiento llamada <code>standard</code> que utiliza EBS de AWS con tipo de volumen <code>gp2</code>, lo que permite aprovisionar volúmenes persistentes de forma dinámica.</p>
 </div>
-<div class="paragraph">
-<p><strong>Solicitud de volumen persistente (PVC)</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Solicitud de volumen persistente (PVC)</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: PersistentVolumeClaim
@@ -2369,7 +2462,7 @@ metadata:
   name: mi-pvc
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce # Acceso exclusivo para un nodo
   resources:
     requests:
       storage: 10Gi
@@ -2379,10 +2472,39 @@ spec:
 <div class="paragraph">
 <p>En este ejemplo, se crea un PVC llamado <code>mi-pvc</code> que solicita 10 GiB de almacenamiento con acceso de lectura/escritura exclusivo para un nodo, utilizando la clase de almacenamiento <code>standard</code>.</p>
 </div>
-<div class="paragraph">
-<p><strong>Montaje en un Pod</strong>:</p>
+<div class="ulist">
+<div class="title">Los accessModes más comunes son:</div>
+<ul>
+<li>
+<p><code>ReadWriteOnce</code>: Acceso de lectura/escritura exclusivo para un nodo.</p>
+</li>
+<li>
+<p><code>ReadOnlyMany</code>: Acceso de solo lectura para múltiples nodos.</p>
+</li>
+<li>
+<p><code>ReadWriteMany</code>: Acceso de lectura/escritura para múltiples nodos.</p>
+</li>
+</ul>
 </div>
 <div class="listingblock">
+<div class="title"><strong>Definición de PersistentVolume (PV)</strong>:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mi-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath: /var/lib/mydata</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title"><strong>Montaje en un Pod</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
@@ -2404,16 +2526,42 @@ spec:
 </div>
 <div class="sect2">
 <h3 id="_resumen_de_conceptos_clave">Resumen de conceptos clave</h3>
-<div class="paragraph">
-<p>| Componente             | Función principal                                                                 |
-|------------------------|-----------------------------------------------------------------------------------|
-| Volumen (Volume)       | Montaje de almacenamiento en un Pod, puede ser efímero o persistente        |
-| PersistentVolume (PV)  | Recurso físico de almacenamiento persistente en el clúster               |
-| PersistentVolumeClaim  | Solicitud de almacenamiento persistente por parte de una aplicación      |
-| StorageClass           | Define el tipo y aprovisionador de almacenamiento                           |
-| CSI                    | Plugin para integración con proveedores externos de almacenamiento           |
-| OpenShift Data Foundation | Solución de almacenamiento definido por software para OpenShift           |</p>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Componente</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Función principal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Volumen (Volume)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Montaje de almacenamiento en un Pod, puede ser efímero o persistente</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PersistentVolume (PV)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Recurso físico de almacenamiento persistente en el clúster</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PersistentVolumeClaim</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Solicitud de almacenamiento persistente por parte de una aplicación</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">StorageClass</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Define el tipo y aprovisionador de almacenamiento</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CSI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Plugin para integración con proveedores externos de almacenamiento</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OpenShift Data Foundation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Solución de almacenamiento definido por software para OpenShift</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect2">
 <h3 id="_ejemplo_completo_aplicación_wordpress_en_openshift">Ejemplo completo: Aplicación WordPress en OpenShift</h3>
@@ -2634,7 +2782,7 @@ spec:
 </div>
 </div>
 <div class="paragraph">
-<p><strong>Configuración de salud</strong>:</p>
+<p><strong>Configuración de healthcheck</strong>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2736,10 +2884,8 @@ oc logs -f deployment/wordpress</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_creación_de_rutas_mediante_cli">Creación de rutas mediante CLI</h3>
-<div class="paragraph">
-<p><strong>Exposición básica</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Exposición básica</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash"># Exponer servicio como ruta HTTP simple
 oc expose svc/mi-servicio
@@ -2751,10 +2897,8 @@ oc create route edge mi-ruta-segura \
   --insecure-policy=Redirect</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p><strong>Definición YAML avanzada</strong>:</p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Definición YAML avanzada</strong>:</div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: route.openshift.io/v1
 kind: Route
@@ -2777,10 +2921,8 @@ spec:
       ...</code></pre>
 </div>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_gestión_de_nombres_de_host">Gestión de nombres de host</h3>
 <div class="ulist">
+<div class="title">Gestión de nombres de host</div>
 <ul>
 <li>
 <p><strong>Hostnames automáticos</strong>: Formato <code>&lt;servicio&gt;-&lt;proyecto&gt;.&lt;dominio-ingress&gt;</code></p>
@@ -2872,10 +3014,8 @@ curl -v http://$(oc get route mi-ruta -o jsonpath='{.spec.host}')</code></pre>
 <div class="paragraph">
 <p>Los pods son la unidad mínima de ejecución en OpenShift y Kubernetes. Cada pod puede contener uno o varios contenedores que comparten red y almacenamiento. El programador (<code>kube-scheduler</code>) decide en qué nodo desplegar cada pod según la capacidad, requisitos y políticas del clúster. El estado y configuración de los pods se gestiona a través del API server, que almacena la información en etcd.</p>
 </div>
-<div class="paragraph">
-<p><strong>Ejemplo de creación de pod:</strong></p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>Ejemplo de creación de pod:</strong></div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
 kind: Pod
@@ -2887,6 +3027,12 @@ spec:
       image: nginx:1.21
       ports:
         - containerPort: 80</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Comando para crear un pod:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc create -f mi-pod.yaml</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -3091,21 +3237,21 @@ oc describe route &lt;nombre&gt;</code></pre>
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-name: ejemplo-hpa
+  name: ejemplo-hpa
 spec:
-scaleTargetRef:
-apiVersion: apps/v1
-kind: Deployment
-name: mi-app
-minReplicas: 2
-maxReplicas: 10
-metrics:
-- type: Resource
-resource:
-name: cpu
-target:
-type: Utilization
-averageUtilization: 80</code></pre>
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mi-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -3114,11 +3260,8 @@ averageUtilization: 80</code></pre>
 </div>
 <div class="sect3">
 <h4 id="_balanceo_de_carga">Balanceo de carga</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>OpenShift implementa varios mecanismos para distribuir el tráfico entre los pods disponibles:</p>
 <div class="ulist">
+<div class="title">OpenShift implementa varios mecanismos para distribuir el tráfico entre los pods disponibles:</div>
 <ul>
 <li>
 <p>Los servicios de OpenShift (Service) distribuyen el tráfico entre los pods disponibles, usando balanceo de carga en capa 4 (TCP/UDP) o capa 7 (HTTP/HTTPS).</p>
@@ -3134,9 +3277,6 @@ averageUtilization: 80</code></pre>
 Estos mecanismos trabajan en conjunto para ofrecer aplicaciones resilientes, escalables y con alta disponibilidad en entornos OpenShift.</p>
 </li>
 </ul>
-</div>
-</li>
-</ol>
 </div>
 </div>
 </div>
@@ -3257,6 +3397,14 @@ Estos mecanismos trabajan en conjunto para ofrecer aplicaciones resilientes, esc
 </div>
 <div class="paragraph">
 <p>Esto crea un Horizontal Pod Autoscaler que monitoriza y escala los pods según la demanda.</p>
+</div>
+</li>
+<li>
+<p><strong>Quitar autoescalado:</strong> Si necesitas desactivar el autoescalado, puedes eliminar el HPA asociado.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc delete hpa &lt;nombre-hpa&gt;</code></pre>
+</div>
 </div>
 </li>
 <li>
@@ -4972,7 +5120,7 @@ port:
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-06-25 09:01:10 +0200
+Last updated 2025-06-26 01:18:53 +0200
 </div>
 </div>
 </body>
