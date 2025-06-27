@@ -4789,11 +4789,11 @@ spec:
 <div class="listingblock">
 <div class="title">Flujo de diagnóstico</div>
 <div class="content">
-<pre class="highlight"><code class="language-text" data-lang="text">1. Detectar anomalía (alerta, degradación rendimiento)
+<pre>1. Detectar anomalía (alerta, degradación rendimiento)
 2. Consultar métricas en tiempo real (Prometheus/Grafana)
 3. Analizar logs relevantes (Kibana/oc logs)
 4. Correlacionar eventos con métricas
-5. Identificar root cause y aplicar corrección</code></pre>
+5. Identificar root cause y aplicar corrección</pre>
 </div>
 </div>
 <div class="listingblock">
@@ -4816,7 +4816,7 @@ sum(rate(istio_requests_total{response_code=~"5.."}[5m])) by (destination_servic
 <div class="listingblock">
 <div class="title">Consultas útiles en Kibana (OpenShift Logging)</div>
 <div class="content">
-<pre class="highlight"><code class="language-text" data-lang="text">// 1. Buscar errores en pods específicos
+<pre class="highlight"><code class="language-promql" data-lang="promql">// 1. Buscar errores en pods específicos
 kubernetes.namespace_name:"mi-app" AND (message:"ERROR" OR message:"Exception")
 
 // 2. Logs de init containers fallidos
@@ -5117,10 +5117,762 @@ port:
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_helm_en_openshift">Helm en OpenShift</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Helm es un gestor de paquetes para Kubernetes que simplifica la instalación, actualización y gestión de aplicaciones en clústeres Kubernetes. Utiliza "charts", que son colecciones de archivos que describen los recursos necesarios para desplegar una aplicación, incluyendo configuraciones, dependencias y plantillas.</p>
+</div>
+<div class="paragraph">
+<p>Helm permite a los usuarios instalar aplicaciones complejas con un solo comando, gestionar versiones y realizar actualizaciones de manera sencilla. Es especialmente útil en entornos de producción donde se requiere consistencia y control en el despliegue de aplicaciones.</p>
+</div>
+<div class="ulist">
+<div class="title">Elementos que componen Helm:</div>
+<ul>
+<li>
+<p><strong>Charts</strong>: Paquetes de Helm que contienen todos los recursos necesarios para desplegar una aplicación. Incluyen plantillas de Kubernetes, valores predeterminados y metadatos.</p>
+</li>
+<li>
+<p><strong>Releases</strong>: Instancias de un chart desplegado en un clúster. Cada release tiene un nombre único y puede ser actualizado o eliminado sin afectar a otros releases.</p>
+</li>
+<li>
+<p><strong>Repositories</strong>: Colecciones de charts almacenados en un servidor HTTP. Se puede añadir o quitar repositorios para acceder a diferentes aplicaciones y versiones.</p>
+</li>
+<li>
+<p><strong>Helm CLI</strong>: Aplicación de línea de comandos para interactuar con Helm, permitiendo instalar, actualizar, eliminar y gestionar releases y charts.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_instalación_y_configuración_de_helm_en_openshift">Instalación y Configuración de Helm en OpenShift</h3>
+<div class="sect3">
+<h4 id="_requisitos_previos">Requisitos Previos</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Disponer de un clúster OpenShift en funcionamiento.</p>
+</li>
+<li>
+<p>Acceso de administrador o permisos suficientes para instalar software y gestionar recursos en el clúster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_instalación_del_cliente_helm">Instalación del Cliente Helm</h4>
+<div class="listingblock">
+<div class="title">Descarga el binario de Helm para Linux:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">wget -O helm https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/helm/latest/helm-linux-amd64</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instala el binario en tu PATH:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">sudo install helm /usr/local/bin</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Verifica la instalación:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm version</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_alternativa_con_curl">Alternativa con curl</h4>
+<div class="listingblock">
+<div class="title">Si prefieres usar <code>curl</code> para descargar Helm, puedes hacerlo con el siguiente comando:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">curl -L https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64 -o /usr/local/bin/helm
+chmod +x /usr/local/bin/helm
+helm version</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configuración_inicial">Configuración Inicial</h4>
+<div class="listingblock">
+<div class="title">Accede al clúster OpenShift:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc login https://&lt;URL-CLUSTER&gt;:&lt;PUERTO&gt; --token=&lt;TOKEN&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">(Opcional) Crea un nuevo proyecto para desplegar aplicaciones:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">oc new-project &lt;nombre-proyecto&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_añadir_repositorios_de_charts">Añadir Repositorios de Charts</h4>
+<div class="listingblock">
+<div class="title">Añade el repositorio oficial de charts de OpenShift:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo add openshift-helm-charts https://charts.openshift.io/</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Actualiza la lista de charts:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo update</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Para ver los charts disponibles en el repositorio:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm search repo openshift-helm-charts</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_instalación_de_un_chart_de_ejemplo">Instalación de un Chart de Ejemplo</h4>
+<div class="listingblock">
+<div class="title">Instala un chart (por ejemplo, HashiCorp Vault):</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install example-vault openshift-helm-charts/redhat-redis-sed</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Verifica la instalación:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm list
+oc get pods -n &lt;nombre-proyecto&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_notas">Notas</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Puedes gestionar el ciclo de vida de las aplicaciones con los comandos estándar de Helm: install, upgrade, rollback, delete, etc.</p>
+</li>
+<li>
+<p>Consulta la documentación oficial de OpenShift y Helm para detalles adicionales y compatibilidad de versiones.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_repositorios_de_helm">Repositorios de Helm</h3>
+<div class="sect3">
+<h4 id="_qué_es_un_repositorio_de_charts">¿Qué es un repositorio de Charts?</h4>
+<div class="paragraph">
+<p>Un repositorio de charts es un servidor (normalmente HTTP) donde se almacenan y comparten charts de Helm, que son paquetes que describen los recursos necesarios para desplegar aplicaciones en Kubernetes. Los repositorios pueden ser públicos o privados y permiten a los usuarios buscar, descargar e instalar charts fácilmente, facilitando la reutilización y colaboración entre equipos y comunidades.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_añadir_actualizar_y_eliminar_repositorios">Añadir, actualizar y eliminar repositorios</h4>
+<div class="listingblock">
+<div class="title">Añadir un repositorio:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo add &lt;nombre&gt; &lt;url&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Actualizar la información de los repositorios:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo update</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listar los repositorios configurados:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo list</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Eliminar un repositorio:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo remove &lt;nombre&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Por ejemplo, para añadir el repositorio de Bitnami y actualizarlo:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Siempre es recomendable ejecutar <code>helm repo update</code> después de añadir o modificar repositorios para asegurarse de tener la información más reciente de los charts disponibles.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_buscar_y_listar_charts_disponibles">Buscar y listar Charts disponibles</h4>
+<div class="listingblock">
+<div class="title">Buscar un chart por palabra clave en todos los repositorios:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm search repo &lt;palabra-clave&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Buscar charts en Artifact Hub (repositorio central de la comunidad):</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm search hub &lt;palabra-clave&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ejemplo para listar todos los charts del repositorio Bitnami:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm search repo bitnami</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_trabajando_con_charts">Trabajando con Charts</h3>
+<div class="sect3">
+<h4 id="_instalación_de_aplicaciones_usando_charts">Instalación de aplicaciones usando Charts</h4>
+<div class="listingblock">
+<div class="title">Buscar Charts disponibles:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm search repo &lt;nombre-chart&gt;  # Ej: helm search repo apache</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar un Chart:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install &lt;nombre-release&gt; &lt;repositorio&gt;/&lt;chart&gt;  # Ej: helm install mi-apache bitnami/apache</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar desde archivo local:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install foo foo-0.1.1.tgz</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar desde directorio:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install foo path/to/foo</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar desde URL:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install foo https://example.com/charts/foo-1.2.3.tgz</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_gestión_de_releases_upgrade_rollback_delete">Gestión de releases: upgrade, rollback, delete</h4>
+<div class="listingblock">
+<div class="title">Actualizar (upgrade) un release:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm upgrade &lt;release&gt; &lt;chart&gt;  # Ej: helm upgrade mi-apache bitnami/apache</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ver historial de revisiones:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm history &lt;release&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Rollback de un release:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm rollback &lt;release&gt; &lt;revision&gt;  # Ej: helm rollback mi-apache 1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Eliminar (delete) un release:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm uninstall &lt;release&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Eliminar forzosamente un release atascado:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm delete &lt;release&gt; --namespace &lt;namespace&gt; --force</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ejemplos_prácticos_instalar_apache_redis_etc">Ejemplos prácticos: instalar Apache, Redis, etc.</h4>
+<div class="listingblock">
+<div class="title">Instalar Apache:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install mi-apache bitnami/apache</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Verificar estado de los recursos:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get pods,svc</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar Redis:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-redis bitnami/redis</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar Redis con configuración personalizada:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-redis bitnami/redis --set persistence.enabled=true --set password=mi-contraseña</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Instalar Redis Enterprise Operator:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm repo add redis https://helm.redis.io/
+helm install redis-operator redis/redis-enterprise-operator --create-namespace --namespace redis</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_información_y_diagnóstico_de_releases_y_charts">Información y diagnóstico de releases y Charts</h4>
+<div class="listingblock">
+<div class="title">Listar releases activos en el namespace actual:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm list</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listar releases en todos los namespaces:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm list -A</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ver estado detallado de un release:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm status &lt;release&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ejecutar pruebas definidas en el chart:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm test &lt;release&gt;</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listar releases fallidos:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm ls --failed</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Recuperar secretos de Helm:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get secrets</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Forzar rollback completo y reiniciar pods:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm rollback &lt;release&gt; &lt;revision&gt; --recreate-pods</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_creación_de_charts_propios">Creación de Charts Propios</h3>
+<div class="sect3">
+<h4 id="_estructura_de_un_chart">Estructura de un Chart</h4>
+<div class="listingblock">
+<div class="title">La estructura básica de un chart de Helm sigue este esquema:</div>
+<div class="content">
+<pre>mychart/
+├── Chart.yaml          # Metadata del chart (nombre, versión, descripción)
+├── values.yaml         # Valores por defecto para la configuración
+├── charts/             # Dependencias/subcharts
+├── templates/          # Plantillas de recursos Kubernetes
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── ...
+└── tests/              # Pruebas del chart
+    └── test-connection.yaml</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_archivos_y_directorios_principales">Archivos y directorios principales</h4>
+<div class="ulist">
+<div class="title">Chart.yaml:</div>
+<ul>
+<li>
+<p>Campos obligatorios: <code>apiVersion</code>, <code>name</code>, <code>version</code>, <code>description</code></p>
+</li>
+<li>
+<p>Campos opcionales: <code>type</code>, <code>keywords</code>, <code>home</code>, <code>dependencies</code></p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">values.yaml:</div>
+<ul>
+<li>
+<p>Define variables configurables por el usuario</p>
+</li>
+<li>
+<p>Ejemplo de jerarquía:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.23"</pre>
+</div>
+</div>
+<div class="ulist">
+<div class="title">templates/:</div>
+<ul>
+<li>
+<p>Archivos YAML/Go templates que generan manifiestos Kubernetes</p>
+</li>
+<li>
+<p>Nombres recomendados: <code>deployment.yaml</code>, <code>service.yaml</code>, <code>ingress.yaml</code>, etc.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">templates/NOTES.txt:</div>
+<ul>
+<li>
+<p>Mensaje de post-instalación mostrado al usuario</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_creación_de_la_estructura_básica">Creación de la estructura básica</h4>
+<div class="listingblock">
+<div class="title">Crear estructura inicial:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm create mi-chart
+cd mi-chart</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Archivos generados automáticamente:</div>
+<div class="content">
+<pre>mi-chart/
+├── Chart.yaml
+├── values.yaml
+├── charts/
+├── templates/
+│   ├── deployment.yaml
+│   ├── hpa.yaml
+│   ├── ingress.yaml
+│   ├── service.yaml
+│   ├── serviceaccount.yaml
+│   └── tests/
+└── .helmignore</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_personalización_de_plantillas_y_ficheros">Personalización de plantillas y ficheros</h4>
+<div class="listingblock">
+<div class="title">Editar <code>values.yaml</code> para añadir parámetros personalizados:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">appName: "mi-app"
+replicaCount: 2
+resources:
+  limits:
+    cpu: 500m</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Modificar plantillas en <code>templates/</code> usando sintaxis Go:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Usar funciones de plantilla:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+...
+{{- end }}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_instalación_y_pruebas_de_un_chart_propio">Instalación y pruebas de un Chart propio</h4>
+<div class="listingblock">
+<div class="title">Instalar desde directorio local:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-release ./mi-chart</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Verificar recursos creados:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">kubectl get all -l app.kubernetes.io/instance=mi-release</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Probar con valores personalizados:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-release ./mi-chart --set replicaCount=4</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Ejecutar pruebas incluidas:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm test mi-release</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Empaquetar para distribución:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm package ./mi-chart</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_values_y_personalización">Values y Personalización</h3>
+<div class="sect3">
+<h4 id="_uso_de_values_yaml">Uso de values.yaml</h4>
+<div class="listingblock">
+<div class="title">El archivo <code>values.yaml</code> define los valores por defecto de las variables que utilizan las plantillas del chart. Permite parametrizar configuraciones como el número de réplicas, la imagen del contenedor, recursos, puertos, etc. Ejemplo típico:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">replicaCount: 2
+image:
+  repository: nginx
+  tag: "1.25"
+service:
+  type: ClusterIP
+  port: 80
+resources: {}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Los valores definidos aquí pueden ser referenciados en las plantillas con la sintaxis:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{ .Values.replicaCount }}
+{{ .Values.image.repository }}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_sobrescribir_valores_por_línea_de_comandos_o_ficheros_externos">Sobrescribir valores por línea de comandos o ficheros externos</h4>
+<div class="listingblock">
+<div class="title">Para sobrescribir valores individuales desde la línea de comandos:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-release ./mi-chart --set replicaCount=4 --set image.tag="1.26"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Para sobrescribir múltiples valores usando un archivo externo:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-release ./mi-chart -f mis-valores.yaml</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Es posible combinar ambos métodos:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm install mi-release ./mi-chart -f mis-valores.yaml --set service.type=LoadBalancer</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Para actualizar valores en un release ya instalado:</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">helm upgrade mi-release ./mi-chart --set replicaCount=5</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_buenas_prácticas_en_la_gestión_de_valores">Buenas prácticas en la gestión de valores</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Documenta todos los valores posibles en el propio <code>values.yaml</code> con comentarios.</p>
+</li>
+<li>
+<p>Usa nombres descriptivos y jerárquicos para facilitar la lectura y modificación.</p>
+</li>
+<li>
+<p>No almacenes secretos directamente en <code>values.yaml</code>; utiliza herramientas como Sealed Secrets o External Secrets.</p>
+</li>
+<li>
+<p>Proporciona archivos de valores de ejemplo para distintos entornos (<code>values-dev.yaml</code>, <code>values-prod.yaml</code>).</p>
+</li>
+<li>
+<p>Valida los valores usando esquemas (<code>values.schema.json</code>) si tu chart lo requiere.</p>
+</li>
+<li>
+<p>Mantén los valores por defecto lo más genéricos posible para favorecer la reutilización.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_plantillas_y_funciones">Plantillas y Funciones</h3>
+<div class="sect3">
+<h4 id="_sintaxis_de_plantillas_en_helm_go_templates">Sintaxis de plantillas en Helm (Go templates)</h4>
+<div class="paragraph">
+<p>Las plantillas de Helm usan la sintaxis de Go templates para generar manifiestos Kubernetes dinámicos:
+- Delimitadores <code>{{ }}</code> para lógica de plantillas
+- Acceso a objetos como <code>.Values</code>, <code>.Release</code>, y <code>.Chart</code>
+- Más de 60 funciones incorporadas para manipulación de datos</p>
+</div>
+<div class="listingblock">
+<div class="title">Ejemplo básico de ConfigMap:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  greeting: "{{ .Values.greeting | default "Hello" }}"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_uso_de_variables_funciones_y_pipelines">Uso de variables, funciones y pipelines</h4>
+<div class="listingblock">
+<div class="title">Variables (persisten fuera de bloques):</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- $app := .Chart.Name -}}
+metadata:
+  name: {{ $app }}-config</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Funciones esenciales:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go"># Strings: upper, trim, replace
+{{ "hello" | upper }} → HELLO
+
+# Conversión: toYaml, b64enc
+{{ .Values.config | toYaml }}
+
+# Matemáticas: add, mul
+{{ 3 | add 5 }} → 8</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Pipelines (encadenamiento):</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{ .Values.image.tag | default "latest" | quote }}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_control_de_flujo_condicionales_y_bucles">Control de flujo: condicionales y bucles</h3>
+<div class="listingblock">
+<div class="title">Condicionales (if/else):</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+{{- else }}
+# No se crea Ingress
+{{- end }}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Bucles (range):</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">env:
+  {{- range $key, $val := .Values.envVars }}
+  - name: {{ $key | upper }}
+    value: {{ $val | quote }}
+  {{- end }}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Operadores lógicos:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- if and (eq .Values.env "prod") (gt .Values.replicas 3) }}
+# Configuración para producción
+{{- end }}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ejercicios_prácticos_de_personalización_avanzada">Ejercicios prácticos de personalización avanzada</h3>
+<div class="listingblock">
+<div class="title">Plantilla dinámica para entornos múltiples:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- $env := .Values.environment | default "dev" -}}
+image: "{{ .Values.image.registry }}/app:{{ index .Values.image.tags $env }}"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Generación condicional de HPA:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- if and .Values.autoscaling.enabled (gt .Values.replicas 1) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: {{ .Values.autoscaling.min }}
+{{- end }}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Loop indexado para StatefulSets:</div>
+<div class="content">
+<pre class="highlight"><code class="language-go" data-lang="go">{{- range $i := until .Values.redis.replicas }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-{{ $i }}
+spec:
+  containers:
+  - name: redis
+    image: {{ $.Values.redis.image }}
+{{- end }}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Plantillas anidadas con <code>tpl</code>:</div>
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># values.yaml
+configTemplate: "timeout: {{ .Values.timeout }}"
+
+# template
+data:
+  config.yml: {{ tpl .Values.configTemplate . }}</code></pre>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Buenas prácticas:</div>
+<ul>
+<li>
+<p>Usar <code>{{-</code> y <code>-}}</code> para control de espacios</p>
+</li>
+<li>
+<p>Crear helpers en <code>_helpers.tpl</code> para lógica compleja</p>
+</li>
+<li>
+<p>Validar valores con <code>values.schema.json</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-06-26 01:18:53 +0200
+Last updated 2025-06-26 21:06:16 +0200
 </div>
 </div>
 </body>
