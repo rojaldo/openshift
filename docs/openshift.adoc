@@ -2529,7 +2529,7 @@ sum(rate(container_cpu_usage_seconds_total{namespace="mi-proyecto"}[5m]))
 
 .Flujo de diagnóstico
 
-[source,text]
+[tree]
 ----
 1. Detectar anomalía (alerta, degradación rendimiento)
 2. Consultar métricas en tiempo real (Prometheus/Grafana)
@@ -2539,7 +2539,7 @@ sum(rate(container_cpu_usage_seconds_total{namespace="mi-proyecto"}[5m]))
 ----
 
 .Métricas clave para troubleshooting
-[source,promql]
+[source, promql]
 ----
 // 1. Uso de recursos por pod
 container_cpu_usage_seconds_total{namespace="mi-app"}
@@ -2556,7 +2556,7 @@ sum(rate(istio_requests_total{response_code=~"5.."}[5m])) by (destination_servic
 ----
 
 .Consultas útiles en Kibana (OpenShift Logging)
-[source,text]
+[source, promql]
 ----
 // 1. Buscar errores en pods específicos
 kubernetes.namespace_name:"mi-app" AND (message:"ERROR" OR message:"Exception")
@@ -2786,3 +2786,640 @@ to:
 port:
   targetPort: 80
 ----
+
+== Helm en OpenShift
+
+Helm es un gestor de paquetes para Kubernetes que simplifica la instalación, actualización y gestión de aplicaciones en clústeres Kubernetes. Utiliza "charts", que son colecciones de archivos que describen los recursos necesarios para desplegar una aplicación, incluyendo configuraciones, dependencias y plantillas. 
+
+Helm permite a los usuarios instalar aplicaciones complejas con un solo comando, gestionar versiones y realizar actualizaciones de manera sencilla. Es especialmente útil en entornos de producción donde se requiere consistencia y control en el despliegue de aplicaciones.
+
+.Elementos que componen Helm:
+* **Charts**: Paquetes de Helm que contienen todos los recursos necesarios para desplegar una aplicación. Incluyen plantillas de Kubernetes, valores predeterminados y metadatos.
+* **Releases**: Instancias de un chart desplegado en un clúster. Cada release tiene un nombre único y puede ser actualizado o eliminado sin afectar a otros releases.
+* **Repositories**: Colecciones de charts almacenados en un servidor HTTP. Se puede añadir o quitar repositorios para acceder a diferentes aplicaciones y versiones.
+* **Helm CLI**: Aplicación de línea de comandos para interactuar con Helm, permitiendo instalar, actualizar, eliminar y gestionar releases y charts.
+
+=== Instalación y Configuración de Helm en OpenShift
+
+==== Requisitos Previos
+- Disponer de un clúster OpenShift en funcionamiento.
+- Acceso de administrador o permisos suficientes para instalar software y gestionar recursos en el clúster.
+
+==== Instalación del Cliente Helm
+
+.Descarga el binario de Helm para Linux:
+[source,bash]
+----
+wget -O helm https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/helm/latest/helm-linux-amd64
+----
+
+.Instala el binario en tu PATH:
+[source,bash]
+----
+sudo install helm /usr/local/bin
+----
+
+.Verifica la instalación:
+[source,bash]
+----
+helm version
+----
+
+==== Alternativa con curl
+.Si prefieres usar `curl` para descargar Helm, puedes hacerlo con el siguiente comando:
+[source,bash]
+----
+curl -L https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64 -o /usr/local/bin/helm
+chmod +x /usr/local/bin/helm
+helm version
+----
+
+==== Configuración Inicial
+
+.Accede al clúster OpenShift:
+[source,bash]
+----
+oc login https://<URL-CLUSTER>:<PUERTO> --token=<TOKEN>
+----
+
+.(Opcional) Crea un nuevo proyecto para desplegar aplicaciones:
+[source,bash]
+----
+oc new-project <nombre-proyecto>
+----
+
+==== Añadir Repositorios de Charts
+
+.Añade el repositorio oficial de charts de OpenShift:
+[source,bash]
+----
+helm repo add openshift-helm-charts https://charts.openshift.io/
+----
+
+.Actualiza la lista de charts:
+[source,bash]
+----
+helm repo update
+----
+
+.Para ver los charts disponibles en el repositorio:
+[source,bash]
+----
+helm search repo openshift-helm-charts
+----
+
+==== Instalación de un Chart de Ejemplo
+
+.Instala un chart (por ejemplo, HashiCorp Vault):
+[source,bash]
+----
+helm install example-vault openshift-helm-charts/redhat-redis-sed
+----
+
+.Verifica la instalación:
+[source,bash]
+----
+helm list
+oc get pods -n <nombre-proyecto>
+----
+
+==== Notas
+
+- Puedes gestionar el ciclo de vida de las aplicaciones con los comandos estándar de Helm: install, upgrade, rollback, delete, etc.
+- Consulta la documentación oficial de OpenShift y Helm para detalles adicionales y compatibilidad de versiones.
+
+=== Repositorios de Helm
+
+==== ¿Qué es un repositorio de Charts?
+Un repositorio de charts es un servidor (normalmente HTTP) donde se almacenan y comparten charts de Helm, que son paquetes que describen los recursos necesarios para desplegar aplicaciones en Kubernetes. Los repositorios pueden ser públicos o privados y permiten a los usuarios buscar, descargar e instalar charts fácilmente, facilitando la reutilización y colaboración entre equipos y comunidades.
+
+==== Añadir, actualizar y eliminar repositorios
+
+.Añadir un repositorio:
+[source,bash]
+----
+helm repo add <nombre> <url>
+----
+
+.Actualizar la información de los repositorios:
+[source,bash]
+----
+helm repo update
+----
+
+.Listar los repositorios configurados:
+[source,bash]
+----
+helm repo list
+----
+
+.Eliminar un repositorio:
+[source,bash]
+----
+helm repo remove <nombre>
+----
+
+.Por ejemplo, para añadir el repositorio de Bitnami y actualizarlo:
+[source,bash]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+----
+
+Siempre es recomendable ejecutar `helm repo update` después de añadir o modificar repositorios para asegurarse de tener la información más reciente de los charts disponibles.
+
+==== Buscar y listar Charts disponibles
+
+.Buscar un chart por palabra clave en todos los repositorios:
+[source,bash]
+----
+helm search repo <palabra-clave>
+----
+
+
+
+.Buscar charts en Artifact Hub (repositorio central de la comunidad):
+[source,bash]
+----
+helm search hub <palabra-clave>
+----
+
+.Ejemplo para listar todos los charts del repositorio Bitnami:
+[source,bash]
+----
+helm search repo bitnami
+----
+
+
+=== Trabajando con Charts
+
+==== Instalación de aplicaciones usando Charts
+
+.Buscar Charts disponibles:
+[source,bash]
+----
+helm search repo <nombre-chart>  # Ej: helm search repo apache
+----
+
+.Instalar un Chart:
+[source,bash]
+----
+helm install <nombre-release> <repositorio>/<chart>  # Ej: helm install mi-apache bitnami/apache
+----
+
+.Instalar desde archivo local:
+[source,bash]
+----
+helm install foo foo-0.1.1.tgz
+----
+
+.Instalar desde directorio:
+[source,bash]
+----
+helm install foo path/to/foo
+----
+
+.Instalar desde URL:
+[source,bash]
+----
+helm install foo https://example.com/charts/foo-1.2.3.tgz
+----
+
+==== Gestión de releases: upgrade, rollback, delete
+
+.Actualizar (upgrade) un release:
+[source,bash]
+----
+helm upgrade <release> <chart>  # Ej: helm upgrade mi-apache bitnami/apache
+----
+
+.Ver historial de revisiones:
+[source,bash]
+----
+helm history <release>
+----
+
+.Rollback de un release:
+[source,bash]
+----
+helm rollback <release> <revision>  # Ej: helm rollback mi-apache 1
+----
+
+.Eliminar (delete) un release:
+[source,bash]
+----
+helm uninstall <release>
+----
+
+.Eliminar forzosamente un release atascado:
+[source,bash]
+----
+helm delete <release> --namespace <namespace> --force
+----
+
+==== Ejemplos prácticos: instalar Apache, Redis, etc.
+
+.Instalar Apache:
+[source,bash]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install mi-apache bitnami/apache
+----
+
+.Verificar estado de los recursos:
+[source,bash]
+----
+kubectl get pods,svc
+----
+
+.Instalar Redis:
+[source,bash]
+----
+helm install mi-redis bitnami/redis
+----
+
+.Instalar Redis con configuración personalizada:
+[source,bash]
+----
+helm install mi-redis bitnami/redis --set persistence.enabled=true --set password=mi-contraseña
+----
+
+.Instalar Redis Enterprise Operator:
+[source,bash]
+----
+helm repo add redis https://helm.redis.io/
+helm install redis-operator redis/redis-enterprise-operator --create-namespace --namespace redis
+----
+
+==== Información y diagnóstico de releases y Charts
+
+.Listar releases activos en el namespace actual:
+[source,bash]
+----
+helm list
+----
+
+.Listar releases en todos los namespaces:
+[source,bash]
+----
+helm list -A
+----
+
+.Ver estado detallado de un release:
+[source,bash]
+----
+helm status <release>
+----
+
+.Ejecutar pruebas definidas en el chart:
+[source,bash]
+----
+helm test <release>
+----
+
+.Listar releases fallidos:
+[source,bash]
+----
+helm ls --failed
+----
+
+.Recuperar secretos de Helm:
+[source,bash]
+----
+kubectl get secrets
+----
+
+.Forzar rollback completo y reiniciar pods:
+[source,bash]
+----
+helm rollback <release> <revision> --recreate-pods
+----
+
+
+=== Creación de Charts Propios
+
+==== Estructura de un Chart
+.La estructura básica de un chart de Helm sigue este esquema:
+[tree]
+----
+mychart/
+├── Chart.yaml          # Metadata del chart (nombre, versión, descripción)
+├── values.yaml         # Valores por defecto para la configuración
+├── charts/             # Dependencias/subcharts
+├── templates/          # Plantillas de recursos Kubernetes
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── ...
+└── tests/              # Pruebas del chart
+    └── test-connection.yaml
+----
+
+==== Archivos y directorios principales
+
+.Chart.yaml:
+- Campos obligatorios: `apiVersion`, `name`, `version`, `description`
+- Campos opcionales: `type`, `keywords`, `home`, `dependencies`
+
+.values.yaml:
+- Define variables configurables por el usuario
+- Ejemplo de jerarquía:
+[source,yaml]
+----
+replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.23"
+----
+
+.templates/:
+- Archivos YAML/Go templates que generan manifiestos Kubernetes
+- Nombres recomendados: `deployment.yaml`, `service.yaml`, `ingress.yaml`, etc.
+
+.templates/NOTES.txt:
+- Mensaje de post-instalación mostrado al usuario
+
+==== Creación de la estructura básica
+
+.Crear estructura inicial:
+[source,bash]
+----
+helm create mi-chart
+cd mi-chart
+----
+
+.Archivos generados automáticamente:
+[tree]
+----
+mi-chart/
+├── Chart.yaml
+├── values.yaml
+├── charts/
+├── templates/
+│   ├── deployment.yaml
+│   ├── hpa.yaml
+│   ├── ingress.yaml
+│   ├── service.yaml
+│   ├── serviceaccount.yaml
+│   └── tests/
+└── .helmignore
+----
+
+==== Personalización de plantillas y ficheros
+
+.Editar `values.yaml` para añadir parámetros personalizados:
+[source,yaml]
+----
+appName: "mi-app"
+replicaCount: 2
+resources:
+  limits:
+    cpu: 500m
+----
+
+.Modificar plantillas en `templates/` usando sintaxis Go:
+[source,yaml]
+----
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+----
+
+.Usar funciones de plantilla:
+[source,yaml]
+----
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+...
+{{- end }}
+----
+
+==== Instalación y pruebas de un Chart propio
+
+.Instalar desde directorio local:
+[source,bash]
+----
+helm install mi-release ./mi-chart
+----
+
+.Verificar recursos creados:
+[source,bash]
+----
+kubectl get all -l app.kubernetes.io/instance=mi-release
+----
+
+.Probar con valores personalizados:
+[source,bash]
+----
+helm install mi-release ./mi-chart --set replicaCount=4
+----
+
+.Ejecutar pruebas incluidas:
+[source,bash]
+----
+helm test mi-release
+----
+
+.Empaquetar para distribución:
+[source,bash]
+----
+helm package ./mi-chart
+----
+
+=== Values y Personalización
+
+==== Uso de values.yaml
+
+.El archivo `values.yaml` define los valores por defecto de las variables que utilizan las plantillas del chart. Permite parametrizar configuraciones como el número de réplicas, la imagen del contenedor, recursos, puertos, etc. Ejemplo típico:
+[source,yaml]
+----
+replicaCount: 2
+image:
+  repository: nginx
+  tag: "1.25"
+service:
+  type: ClusterIP
+  port: 80
+resources: {}
+----
+
+.Los valores definidos aquí pueden ser referenciados en las plantillas con la sintaxis:
+[source,go]
+----
+{{ .Values.replicaCount }}
+{{ .Values.image.repository }}
+----
+
+==== Sobrescribir valores por línea de comandos o ficheros externos
+
+.Para sobrescribir valores individuales desde la línea de comandos:
+[source,bash]
+----
+helm install mi-release ./mi-chart --set replicaCount=4 --set image.tag="1.26"
+----
+
+.Para sobrescribir múltiples valores usando un archivo externo:
+[source,bash]
+----
+helm install mi-release ./mi-chart -f mis-valores.yaml
+----
+
+.Es posible combinar ambos métodos:
+[source,bash]
+----
+helm install mi-release ./mi-chart -f mis-valores.yaml --set service.type=LoadBalancer
+----
+
+.Para actualizar valores en un release ya instalado:
+[source,bash]
+----
+helm upgrade mi-release ./mi-chart --set replicaCount=5
+----
+
+==== Buenas prácticas en la gestión de valores
+
+- Documenta todos los valores posibles en el propio `values.yaml` con comentarios.
+- Usa nombres descriptivos y jerárquicos para facilitar la lectura y modificación.
+- No almacenes secretos directamente en `values.yaml`; utiliza herramientas como Sealed Secrets o External Secrets.
+- Proporciona archivos de valores de ejemplo para distintos entornos (`values-dev.yaml`, `values-prod.yaml`).
+- Valida los valores usando esquemas (`values.schema.json`) si tu chart lo requiere.
+- Mantén los valores por defecto lo más genéricos posible para favorecer la reutilización.
+
+
+=== Plantillas y Funciones
+
+==== Sintaxis de plantillas en Helm (Go templates)
+Las plantillas de Helm usan la sintaxis de Go templates para generar manifiestos Kubernetes dinámicos:
+- Delimitadores `{{ }}` para lógica de plantillas
+- Acceso a objetos como `.Values`, `.Release`, y `.Chart`
+- Más de 60 funciones incorporadas para manipulación de datos
+
+.Ejemplo básico de ConfigMap:
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  greeting: "{{ .Values.greeting | default "Hello" }}"
+----
+
+==== Uso de variables, funciones y pipelines
+
+.Variables (persisten fuera de bloques):
+[source, go]
+----
+{{- $app := .Chart.Name -}}
+metadata:
+  name: {{ $app }}-config
+----
+
+.Funciones esenciales:
+[source, go]
+----
+# Strings: upper, trim, replace
+{{ "hello" | upper }} → HELLO
+
+# Conversión: toYaml, b64enc
+{{ .Values.config | toYaml }}
+
+# Matemáticas: add, mul
+{{ 3 | add 5 }} → 8
+
+----
+
+.Pipelines (encadenamiento):
+[source, go]
+----
+{{ .Values.image.tag | default "latest" | quote }}
+----
+
+=== Control de flujo: condicionales y bucles
+
+.Condicionales (if/else):
+[source,go]
+----
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+{{- else }}
+# No se crea Ingress
+{{- end }}
+----
+
+.Bucles (range):
+[source, go]
+----
+env:
+  {{- range $key, $val := .Values.envVars }}
+  - name: {{ $key | upper }}
+    value: {{ $val | quote }}
+  {{- end }}
+----
+
+.Operadores lógicos:
+[source, go]
+----
+{{- if and (eq .Values.env "prod") (gt .Values.replicas 3) }}
+# Configuración para producción
+{{- end }}
+----
+
+=== Ejercicios prácticos de personalización avanzada
+
+.Plantilla dinámica para entornos múltiples:
+[source, go]
+----
+{{- $env := .Values.environment | default "dev" -}}
+image: "{{ .Values.image.registry }}/app:{{ index .Values.image.tags $env }}"
+----
+
+.Generación condicional de HPA:
+[source, go]
+----
+{{- if and .Values.autoscaling.enabled (gt .Values.replicas 1) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  minReplicas: {{ .Values.autoscaling.min }}
+{{- end }}
+----
+
+.Loop indexado para StatefulSets:
+[source, go]
+----
+{{- range $i := until .Values.redis.replicas }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-{{ $i }}
+spec:
+  containers:
+  - name: redis
+    image: {{ $.Values.redis.image }}
+{{- end }}
+----
+
+.Plantillas anidadas con `tpl`:
+[source,yaml]
+----
+# values.yaml
+configTemplate: "timeout: {{ .Values.timeout }}"
+
+# template
+data:
+  config.yml: {{ tpl .Values.configTemplate . }}
+----
+
+.Buenas prácticas:
+- Usar `{{-` y `-}}` para control de espacios
+- Crear helpers en `_helpers.tpl` para lógica compleja
+- Validar valores con `values.schema.json`
