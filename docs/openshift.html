@@ -2395,16 +2395,30 @@ tkn pipeline describe vote-app-pipeline</code></pre>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_tipos_de_almacenamiento">Tipos de almacenamiento</h3>
-<div class="paragraph">
-<p><strong>Almacenamiento efímero</strong>
-- <strong>emptyDir</strong>: Volumen temporal para compartir datos entre contenedores dentro de un mismo Pod. Los datos se eliminan cuando el Pod finaliza.
-- <strong>hostPath</strong>: Monta un directorio del nodo trabajador en el Pod. Útil para pruebas, pero no recomendado para producción.</p>
+<div class="ulist">
+<div class="title"><strong>Almacenamiento efímero</strong></div>
+<ul>
+<li>
+<p><strong>emptyDir</strong>: Volumen temporal para compartir datos entre contenedores dentro de un mismo Pod. Los datos se eliminan cuando el Pod finaliza.</p>
+</li>
+<li>
+<p><strong>hostPath</strong>: Monta un directorio del nodo trabajador en el Pod. Útil para pruebas, pero no recomendado para producción.</p>
+</li>
+</ul>
 </div>
-<div class="paragraph">
-<p><strong>Almacenamiento persistente</strong>
-- <strong>Volúmenes Persistentes (PV)</strong>: Recurso físico de almacenamiento en el clúster, gestionado por el administrador.
-- <strong>Persistent Volume Claims (PVC)</strong>: Solicitud por parte de un usuario o aplicación para obtener un volumen persistente. El sistema asigna un PV disponible que cumpla los requisitos.
-- <strong>StorageClass</strong>: Define el tipo de almacenamiento y el aprovisionador que lo gestiona (por ejemplo, SSD, Ceph, NFS, etc.).</p>
+<div class="ulist">
+<div class="title"><strong>Almacenamiento persistente</strong></div>
+<ul>
+<li>
+<p><strong>Volúmenes Persistentes (PV)</strong>: Recurso físico de almacenamiento en el clúster, gestionado por el administrador.</p>
+</li>
+<li>
+<p><strong>Persistent Volume Claims (PVC)</strong>: Solicitud por parte de un usuario o aplicación para obtener un volumen persistente. El sistema asigna un PV disponible que cumpla los requisitos.</p>
+</li>
+<li>
+<p><strong>StorageClass</strong>: Define el tipo de almacenamiento y el aprovisionador que lo gestiona (por ejemplo, SSD, Ceph, NFS, etc.).</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -5872,7 +5886,7 @@ data:
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-06-26 21:06:16 +0200
+Last updated 2025-06-27 11:54:30 +0200
 </div>
 </div>
 </body>

@@ -1090,11 +1090,11 @@ oc adm policy add-cluster-role-to-user edit system:serviceaccount:pipeline:tekto
 
 === Tipos de almacenamiento
 
-**Almacenamiento efímero**
+.**Almacenamiento efímero**
 - *emptyDir*: Volumen temporal para compartir datos entre contenedores dentro de un mismo Pod. Los datos se eliminan cuando el Pod finaliza.
 - *hostPath*: Monta un directorio del nodo trabajador en el Pod. Útil para pruebas, pero no recomendado para producción.
 
-**Almacenamiento persistente**
+.**Almacenamiento persistente**
 - *Volúmenes Persistentes (PV)*: Recurso físico de almacenamiento en el clúster, gestionado por el administrador.
 - *Persistent Volume Claims (PVC)*: Solicitud por parte de un usuario o aplicación para obtener un volumen persistente. El sistema asigna un PV disponible que cumpla los requisitos.
 - *StorageClass*: Define el tipo de almacenamiento y el aprovisionador que lo gestiona (por ejemplo, SSD, Ceph, NFS, etc.).

@@ -8,3 +8,6 @@
 ## Recursos online
 - [OpenShift](https://www.openshift.com/)
 - [OpenShift Documentation](https://docs.openshift.com/container-platform/latest/welcome/index.html)
+- [Awesome OpenShift](https://github.com/udhayamgit/openshift-is-awesome?tab=readme-ov-file)
+- [Awesome Kubernetes](https://github.com/tomhuang12/awesome-k8s-resources)
+- [Awesome Docker](https://github.com/veggiemonk/awesome-docker?tab=readme-ov-file#container-composition)
