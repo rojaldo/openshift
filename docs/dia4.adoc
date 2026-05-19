@@ -1,0 +1,1411 @@
+= OpenShift Container Platform - Día 4
+== OpenShift: Plataforma Avanzada
+
+'''
+
+== 4.1 Scheduling avanzado
+
+=== Node selectors, taints y tolerations
+
+*Node Selectors:* Filtro simple para dirigir Pods a nodos específicos.
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-pod
+spec:
+  nodeSelector:
+    hardware: gpu
+  containers:
+  - name: gpu-app
+    image: gpu-app:latest
+----
+
+[source,bash]
+----
+# Etiquetar nodos
+oc label node worker-0 hardware=gpu
+oc label node worker-1 hardware=cpu
+oc label node worker-2 environment=production
+
+# Ver labels
+oc get nodes --show-labels
+oc get nodes -L hardware,environment
+
+# Eliminar label
+oc label node worker-0 hardware-
+----
+
+*Taints y Tolerations:* Control más granular para repeler o atraer Pods.
+
+*Taints en nodos:* "Manchas" que repelen Pods sin toleration correspondiente.
+
+* Effect: `NoSchedule` (no programa), `PreferNoSchedule` (evita si posible), `NoExecute` (evicta Pods existentes)
+
+[source,bash]
+----
+# Aplicar taint
+oc adm taint nodes worker-0 hardware=gpu:NoSchedule
+oc adm taint nodes worker-1 dedicated=infra:NoExecute
+oc adm taint nodes worker-2 special=true:PreferNoSchedule
+
+# Ver taints
+oc describe node worker-0 | grep Taints
+
+# Eliminar taint
+oc adm taint nodes worker-0 hardware:NoSchedule-
+----
+
+*Tolerations en Pods:* Permite que un Pod se programe en nodos con taints específicos.
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-workload
+spec:
+  tolerations:
+  - key: hardware
+    operator: Equal
+    value: gpu
+    effect: NoSchedule
+  - key: dedicated
+    operator: Equal
+    value: infra
+    effect: NoExecute
+    tolerationSeconds: 3600  # Esperar 1 hora antes de eviction
+  containers:
+  - name: gpu-app
+    image: gpu-app:latest
+----
+
+*Ejemplo completo - Nodos dedicados:*
+
+[source,bash]
+----
+# Configurar nodos dedicados a infraestructura
+oc label node worker-0 node-role.kubernetes.io/infra=""
+oc adm taint nodes worker-0 node-role.kubernetes.io/infra=:NoSchedule
+
+# Mover componentes de OpenShift a nodos infra
+oc patch ingresscontroller/default -n openshift-ingress-operator \
+  --type=merge -p '{"spec":{"nodePlacement":{"nodeSelector":{"matchLabels":{"node-role.kubernetes.io/infra":""}},"tolerations":[{"key":"node-role.kubernetes.io/infra","operator":"Exists","effect":"NoSchedule"}]}}}'
+
+oc patch config cluster -n openshift-image-registry \
+  --type=merge -p '{"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"node-role.kubernetes.io/infra","operator":"Exists"]}]}}}}}'
+----
+
+'''
+
+=== Pod Affinity y Anti-Affinity
+
+*Affinity:* Preferencia para programar Pods cerca (o lejos) de otros Pods.
+
+*Tipos:*
+
+* `requiredDuringSchedulingIgnoredDuringExecution` - Hard requirement
+* `preferredDuringSchedulingIgnoredDuringExecution` - Soft preference
+
+*Pod Affinity (co-locación):*
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - backend
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: web
+        image: nginx:latest
+----
+
+*Pod Anti-Affinity (dispersión):*
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - backend
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: backend
+        image: backend-app:latest
+----
+
+*Node Affinity (programación por labels de nodo):*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: high-memory-app
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: memory
+            operator: In
+            values:
+            - high
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+          - key: zone
+            operator: In
+            values:
+            - zone-1
+  containers:
+  - name: app
+    image: app:latest
+----
+
+*Ejemplo completo - Alta disponibilidad:*
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ha-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ha-app
+  template:
+    metadata:
+      labels:
+        app: ha-app
+        tier: web
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - ha-app
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: app
+        image: ha-app:latest
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+----
+
+'''
+
+=== Priority Classes
+
+*PriorityClass:* Define la prioridad de los Pods. Pods de alta prioridad pueden desalojar Pods de baja prioridad (preemption).
+
+[source,yaml]
+----
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+globalDefault: false
+description: "Usar para pods críticos"
+preemptionPolicy: PreemptLowerPriority  # Por defecto
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: medium-priority
+value: 100000
+globalDefault: true  # Default para pods sin priorityClass
+description: "Prioridad media"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+value: 1000
+description: "Prioridad baja"
+preemptionPolicy: Never  # No desaloja otros pods
+----
+
+*Usar PriorityClass en Pod:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: critical-pod
+spec:
+  priorityClassName: high-priority
+  containers:
+  - name: app
+    image: critical-app:latest
+----
+
+[source,bash]
+----
+# Ver PriorityClasses
+oc get priorityclass
+
+# Ver priority de un Pod
+oc get pod critical-pod -o jsonpath='{.spec.priorityClassName}'
+
+# PriorityClasses predefinidas en OpenShift
+oc get priorityclass
+# system-cluster-critical
+# system-node-critical
+# openshift-user-critical
+----
+
+'''
+
+== 4.2 Helm en OpenShift
+
+=== Estructura de un chart
+
+*Helm* es un gestor de paquetes para Kubernetes. Un chart es un paquete Helm.
+
+*Estructura de directorios:*
+
+[source]
+----
+mychart/
+├── Chart.yaml          # Metadata del chart
+├── values.yaml         # Valores por defecto
+├── charts/             # Dependencias
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── _helpers.tpl    # Plantillas reutilizables
+│   └── NOTES.txt       # Notas post-instalación
+├── templates/tests/    # Tests del chart
+│   └── test-connection.yaml
+└── .helmignore         # Archivos a ignorar
+----
+
+*Chart.yaml:*
+
+[source,yaml]
+----
+apiVersion: v2
+name: myapp
+description: A Helm chart for my application
+type: application
+version: 1.0.0         # Versión del chart
+appVersion: "2.0.0"    # Versión de la aplicación
+kubeVersion: ">=1.20.0-0"
+home: https://myapp.example.com
+sources:
+  - https://github.com/myorg/myapp
+maintainers:
+  - name: myteam
+dependencies:
+  - name: postgresql
+    version: "11.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+----
+
+*values.yaml:*
+
+[source,yaml]
+----
+# Valores por defecto
+replicaCount: 2
+
+image:
+  repository: myapp
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: "nginx"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+  tls: []
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+----
+
+*templates/deployment.yaml:*
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myapp.fullname" . }}
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "myapp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "myapp.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "myapp.serviceAccountName" . }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+----
+
+*templates/_helpers.tpl:*
+
+[source,yaml]
+----
+{{/* vim: set filetype=mustache: */}}
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "myapp.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name.
+*/}}
+{{- define "myapp.fullname" -}}
+{{- if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- $name := default .Chart.Name .Values.nameOverride }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "myapp.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Common labels
+*/}}
+{{- define "myapp.labels" -}}
+helm.sh/chart: {{ include "myapp.chart" . }}
+{{ include "myapp.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels
+*/}}
+{{- define "myapp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "myapp.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "myapp.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "myapp.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+----
+
+'''
+
+=== Instalación, actualización y rollback de releases
+
+*Instalación:*
+
+[source,bash]
+----
+# Instalar repositorio de Helm
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+# Buscar charts
+helm search repo nginx
+helm search hub wordpress  # Artifact Hub
+
+# Instalar chart
+helm install my-release bitnami/nginx
+
+# Instalar con valores custom
+helm install my-release bitnami/nginx -f values.yaml
+
+# Instalar con valores inline
+helm install my-release bitnami/nginx --set replicaCount=3
+
+# Dry-run (verificar sin instalar)
+helm install my-release bitnami/nginx --dry-run --debug
+
+# Instalar en namespace específico
+helm install my-release bitnami/nginx -n my-namespace --create-namespace
+----
+
+*Actualización:*
+
+[source,bash]
+----
+# Ver releases
+helm list
+helm list -A  # todos los namespaces
+
+# Actualizar valores
+helm upgrade my-release bitnami/nginx --set replicaCount=5
+
+# Actualizar con archivo de valores
+helm upgrade my-release bitnami/nginx -f values.yaml
+
+# Upgrade con rollback automático si falla
+helm upgrade my-release bitnami/nginx --atomic
+
+# Ver historial
+helm history my-release
+
+# Ver manifiestos de una revisión
+helm get manifest my-release --revision 2
+
+# Ver valores de una revisión
+helm get values my-release --revision 2
+----
+
+*Rollback:*
+
+[source,bash]
+----
+# Rollback a revisión anterior
+helm rollback my-release 1
+
+# Ver estado después del rollback
+helm status my-release
+----
+
+*Desinstalación:*
+
+[source,bash]
+----
+# Desinstalar release
+helm uninstall my-release
+
+# Conservar historial
+helm uninstall my-release --keep-history
+----
+
+'''
+
+=== Repositorios de charts y customización con values.yaml
+
+*Añadir repositorios:*
+
+[source,bash]
+----
+# Repositorios populares
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+# Actualizar repos
+helm repo update
+
+# Listar repos
+helm repo list
+----
+
+*Customización avanzada con values.yaml:*
+
+[source,yaml]
+----
+# values-production.yaml
+replicaCount: 5
+
+image:
+  repository: quay.io/myorg/myapp
+  tag: v2.0.0
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: quay-secret
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector:
+  environment: production
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "production"
+    effect: "NoSchedule"
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - myapp
+      topologyKey: kubernetes.io/hostname
+
+# Dependencias
+postgresql:
+  enabled: true
+----
+
+[source,bash]
+----
+# Instalar con values de producción
+helm install myapp ./mychart -f values-production.yaml
+
+# Múltiples archivos de valores (se mergean)
+helm install myapp ./mychart \
+  -f values.yaml \
+  -f values-secrets.yaml
+
+# Ver valores efectivos
+helm get values myapp --all
+----
+
+*Desarrollo local de charts:*
+
+[source,bash]
+----
+# Crear chart desde template
+helm create mychart
+
+# Validar chart
+helm lint mychart
+
+# Empaquetar chart
+helm package mychart
+
+# Instalar desde tarball
+helm install myapp mychart-1.0.0.tgz
+
+# Servir repositorio local
+helm serve &
+helm repo add local http://localhost:8879
+----
+
+'''
+
+== 4.3 Operators y ciclo de vida de la plataforma
+
+=== Qué es un Operator y el patrón de reconciliación
+
+Un *Operator* es un método de empaquetar, desplegar y gestionar una aplicación Kubernetes usando APIs declarativas.
+
+*Patrón de reconciliación:*
+
+[source]
+----
+┌────────────────────────────────────────────┐
+│              Control Loop                   │
+│  ┌──────────┐        ┌──────────────────┐  │
+│  │  Watch   │───────►│ Desired State    │  │
+│  │  Events  │        │ (Custom Resource)│  │
+│  └──────────┘        └────────┬─────────┘  │
+│                               │             │
+│                               ▼             │
+│                      ┌─────────────────┐   │
+│                      │ Compare with    │   │
+│                      │ Current State   │   │
+│                      └────────┬────────┘   │
+│                               │             │
+│                    ┌──────────┴─────────┐   │
+│                    │                    │   │
+│                    ▼                    ▼   │
+│              ┌──────────┐        ┌─────────┐│
+│              │ Reconcile│        │  Do     ││
+│              │ (Update) │        │  Nothing││
+│              └──────────┘        └─────────┘│
+└────────────────────────────────────────────┘
+----
+
+*Componentes de un Operator:*
+
+* *CRD (Custom Resource Definition):* Define el nuevo tipo de recurso
+* *CR (Custom Resource):* Instancia del recurso
+* *Controller:* Implementa el loop de reconciliación
+
+*Ejemplo - CRD simple:*
+
+[source,yaml]
+----
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databases.myapp.example.com
+spec:
+  group: myapp.example.com
+  names:
+    kind: Database
+    plural: databases
+  scope: Namespaced
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              version:
+                type: string
+              size:
+                type: integer
+              replicas:
+                type: integer
+----
+
+*CR ejemplo:*
+
+[source,yaml]
+----
+apiVersion: myapp.example.com/v1
+kind: Database
+metadata:
+  name: my-database
+spec:
+  version: "15"
+  size: 100Gi
+  replicas: 3
+----
+
+'''
+
+=== OperatorHub y Operator Lifecycle Manager (OLM)
+
+*OperatorHub:* Catálogo de Operators certificados y comunitarios.
+
+*OLM (Operator Lifecycle Manager):* Gestiona el ciclo de vida de Operators (instalación, actualización, permisos).
+
+*Instalar Operator desde consola:*
+
+. Navegar a Operators → OperatorHub
+. Buscar el Operator deseado
+. Click Install
+. Seleccionar namespace y modo de instalación
+. Click Subscribe
+
+*Instalar Operator desde CLI:*
+
+[source,bash]
+----
+# Ver Operators disponibles
+oc get packagemanifests -n openshift-marketplace
+
+# Buscar Operator
+oc search operator postgresql
+
+# Ver detalles
+oc describe packagemanifest postgresql-operator -n openshift-marketplace
+
+# Crear Subscription (instala el Operator)
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: postgresql-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: postgresql-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic
+EOF
+
+# Ver estado de la instalación
+oc get clusterserviceversion -n openshift-operators
+oc get installplan -n openshift-operators
+
+# Ver Operator desplegado
+oc get pods -n openshift-operators -l name=postgresql-operator
+----
+
+*CatalogSources:* Fuentes de Operators.
+
+[source,bash]
+----
+# Ver catálogos disponibles
+oc get catalogsources -n openshift-marketplace
+
+# Catálogos por defecto
+# redhat-operators - Operators certificados por Red Hat
+# certified-operators - Partners certificados
+# community-operators - Operators comunitarios
+# redhat-marketplace - Marketplace de Red Hat
+----
+
+*Crear Instance de un Operator:*
+
+[source,yaml]
+----
+# Una vez instalado el Operator, crear una instancia
+apiVersion: postgresql.k8s.enterprisedb.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-cluster
+spec:
+  instances: 3
+  bootstrap:
+    initdb:
+      database: mydb
+      owner: myuser
+----
+
+'''
+
+=== Operators de plataforma: Pipelines, GitOps, Logging, Service Mesh
+
+*OpenShift Pipelines (Tekton):*
+
+[source,bash]
+----
+# Instalar OpenShift Pipelines Operator
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-pipelines-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: openshift-pipelines-operator-rh
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Verificar instalación
+oc get pods -n openshift-pipelines
+----
+
+*Pipeline Tekton ejemplo:*
+
+[source,yaml]
+----
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-and-deploy
+spec:
+  workspaces:
+  - name: shared-workspace
+  tasks:
+  - name: clone-repo
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+  - name: build-image
+    taskRef:
+      name: buildah
+    runAfter:
+    - clone-repo
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+----
+
+*OpenShift GitOps (ArgoCD):*
+
+[source,bash]
+----
+# Instalar OpenShift GitOps Operator
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-gitops-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: openshift-gitops-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Acceder a ArgoCD
+oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
+
+# Password inicial
+oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d
+----
+
+*Application ArgoCD ejemplo:*
+
+[source,yaml]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myorg/myapp-gitops
+    path: overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: myapp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+----
+
+*OpenShift Logging:*
+
+[source,bash]
+----
+# Instalar OpenShift Logging Operator
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cluster-logging
+  namespace: openshift-logging
+spec:
+  channel: stable
+  name: cluster-logging
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Crear ClusterLogging instance
+oc apply -f - <<EOF
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  managementState: Managed
+  logStore:
+    type: elasticsearch
+    elasticsearch:
+      nodeCount: 3
+  visualization:
+    type: kibana
+  curation:
+    type: curator
+EOF
+----
+
+*OpenShift Service Mesh:*
+
+[source,bash]
+----
+# Instalar Service Mesh Operators
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: servicemeshoperator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: servicemeshoperator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: jaeger-product
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: jaeger-product
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: kiali-ossm
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: kiali-ossm
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+'''
+
+=== Cluster Version Operator (CVO) y actualizaciones del clúster
+
+*CVO* gestiona las actualizaciones de OpenShift.
+
+[source,bash]
+----
+# Ver versión actual
+oc get clusterversion
+oc describe clusterversion
+
+# Ver canales disponibles
+oc adm upgrade
+
+# Ver historial de actualizaciones
+oc get clusterversion version -o jsonpath='{.status.history}'
+
+# Actualizar clúster
+oc adm upgrade --to=4.14.0
+
+# Actualizar al último del canal
+oc adm upgrade --to-latest
+
+# Ver progreso
+oc get clusterversion -w
+
+# Ver operators pendientes de actualizar
+oc get clusteroperators | grep -v "True\sTrue\sTrue"
+----
+
+*Configurar canal de actualizaciones:*
+
+[source,yaml]
+----
+apiVersion: config.openshift.io/v1
+kind: ClusterVersion
+metadata:
+  name: version
+spec:
+  channel: stable-4.14
+  upstream: https://api.openshift.com/api/upgrades_info/v1/graph
+----
+
+'''
+
+=== Machine Config Operator (MCO) y MachineConfigPools
+
+*MCO* gestiona la configuración de los nodos del clúster.
+
+*MachineConfigPools:* Grupos de máquinas con la misma configuración.
+
+[source,bash]
+----
+# Ver MachineConfigPools
+oc get machineconfigpools
+oc describe mcp master
+oc describe mcp worker
+
+# Ver MachineConfigs
+oc get machineconfigs
+
+# Ver configuración aplicada a un nodo
+oc get node worker-0 -o jsonpath='{.metadata.annotations.machineconfiguration\.openshift\.io/currentConfig}'
+----
+
+*Crear MachineConfig custom:*
+
+[source,yaml]
+----
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: custom-worker-config
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+      - name: custom-service.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Custom Service
+          After=network-online.target
+          Wants=network-online.target
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/custom-script
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+    storage:
+      files:
+      - path: /usr/local/bin/custom-script
+        mode: 0755
+        contents:
+          source: data:text/plain;base64,IyEvYmluL2Jhc2gKZWNobyAiQ3VzdG9tIHNjcmlwdCBydW5uaW5nIg==
+----
+
+[source,bash]
+----
+# Aplicar MachineConfig
+oc apply -f machineconfig.yaml
+
+# Ver progreso de aplicación
+oc get mcp worker -w
+
+# Ver nodos actualizados
+oc get nodes -l node-role.kubernetes.io/worker
+----
+
+'''
+
+== 4.4 CI/CD y GitOps
+
+=== OpenShift Pipelines (Tekton): Tasks, Pipelines, Triggers
+
+Ya cubierto parcialmente arriba. Aquí ejemplos adicionales:
+
+*Task reutilizable:*
+
+[source,yaml]
+----
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: npm-build
+spec:
+  workspaces:
+  - name: source
+  params:
+  - name: npm-command
+    type: string
+    default: build
+  steps:
+  - name: build
+    image: node:18
+    workingDir: $(workspaces.source.path)
+    command:
+    - npm
+    - $(params.npm-command)
+----
+
+*Pipeline completo CI/CD:*
+
+[source,yaml]
+----
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-pipeline
+spec:
+  workspaces:
+  - name: shared-workspace
+  params:
+  - name: git-url
+    type: string
+  - name: git-revision
+    type: string
+    default: main
+  tasks:
+  - name: fetch-code
+    taskRef:
+      name: git-clone
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: revision
+      value: $(params.git-revision)
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+  - name: unit-tests
+    runAfter:
+    - fetch-code
+    taskRef:
+      name: npm-build
+    params:
+    - name: npm-command
+      value: test
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+  - name: build-image
+    runAfter:
+    - unit-tests
+    taskRef:
+      name: buildah
+    params:
+    - name: IMAGE
+      value: quay.io/myorg/myapp:latest
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+----
+
+*Trigger para webhooks:*
+
+[source,yaml]
+----
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ci-trigger-template
+spec:
+  params:
+  - name: git-revision
+    description: Git revision
+  - name: git-repo-url
+    description: Git repository URL
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: ci-pipeline-run-
+    spec:
+      pipelineRef:
+        name: ci-pipeline
+      params:
+      - name: git-url
+        value: $(tt.params.git-repo-url)
+      - name: git-revision
+        value: $(tt.params.git-revision)
+      workspaces:
+      - name: shared-workspace
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+            - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: ci-eventlistener
+spec:
+  serviceAccountName: pipeline
+  triggers:
+  - name: ci-trigger
+    bindings:
+    - ref: ci-binding
+    template:
+      ref: ci-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: ci-binding
+spec:
+  params:
+  - name: git-repo-url
+    value: $(body.repository.clone_url)
+  - name: git-revision
+    value: $(body.push.branch)
+----
+
+'''
+
+=== OpenShift GitOps (ArgoCD): Applications, sincronización, entornos
+
+*Configuración de entornos con Kustomize:*
+
+Estructura de repositorio GitOps:
+
+[source]
+----
+gitops-repo/
+├── apps/
+│   └── myapp/
+│       ├── base/
+│       │   ├── deployment.yaml
+│       │   ├── service.yaml
+│       │   ├── configmap.yaml
+│       │   └── kustomization.yaml
+│       └── overlays/
+│           ├── dev/
+│           │   ├── kustomization.yaml
+│           │   └── patches/
+│           ├── staging/
+│           │   ├── kustomization.yaml
+│           │   └── patches/
+│           └── production/
+│               ├── kustomization.yaml
+│               └── patches/
+└── argocd/
+    ├── projects/
+    └── applications/
+----
+
+*base/kustomization.yaml:*
+
+[source,yaml]
+----
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployment.yaml
+- service.yaml
+- configmap.yaml
+
+commonLabels:
+  app.kubernetes.io/name: myapp
+  app.kubernetes.io/managed-by: argocd
+----
+
+*overlays/production/kustomization.yaml:*
+
+[source,yaml]
+----
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: myapp-production
+
+resources:
+- ../../base
+
+patchesStrategicMerge:
+- patches/deployment-replicas.yaml
+- patches/resource-limits.yaml
+
+images:
+- name: myapp
+  newTag: v2.0.0
+
+configMapGenerator:
+- name: myapp-config
+  behavior: merge
+  literals:
+  - ENVIRONMENT=production
+  - LOGLEVEL=info
+----
+
+'''
+
+¡El curso está completo! 🚀

@@ -1,0 +1,767 @@
+= OpenShift Container Platform - Día 3
+== Almacenamiento y Persistencia
+
+'''
+
+== 3.1 Volúmenes y almacenamiento persistente
+
+=== Tipos de volúmenes
+
+*Volúmenes efímeros:*
+
+* `emptyDir` - Almacenamiento temporal entre contenedores del mismo Pod
+* `configMap` - Montar configuración como volumen
+* `secret` - Montar secretos como volumen
+* `downwardAPI` - Información del Pod/Container como volumen
+
+*Volúmenes persistentes:*
+
+* `persistentVolumeClaim` - Solicitar almacenamiento dinámico
+* `nfs` - Compartir almacenamiento NFS
+* `iscsi`, `fc` - Almacenamiento SAN
+* `awsElasticBlockStore`, `gcePersistentDisk`, `azureDisk` - Cloud providers
+* `hostPath` - Montaje desde nodo (solo desarrollo/testing)
+
+*Ejemplo - emptyDir para logs compartidos:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shared-logs
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log/app
+  - name: sidecar-logger
+    image: busybox
+    command: ["tail", "-f", "/logs/app.log"]
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /logs
+  volumes:
+  - name: shared-logs
+    emptyDir: {}
+----
+
+*Ejemplo - Montar ConfigMap como volumen:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  app.properties: |
+    app.name=MyApp
+    app.version=1.0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-reader
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    volumeMounts:
+    - name: config
+      mountPath: /etc/config
+  volumes:
+  - name: config
+    configMap:
+      name: app-config
+      items:
+      - key: app.properties
+        path: application.properties
+----
+
+'''
+
+=== PersistentVolumes (PV) y PersistentVolumeClaims (PVC)
+
+*Ciclo de vida:*
+
+[source]
+----
+Provisioning (Admin) → Binding (Scheduler) → Using (Pod) → Reclaiming (Admin)
+----
+
+*PersistentVolume:* Recurso de almacenamiento a nivel de clúster (creado por admin).
+
+[source,yaml]
+----
+# pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: nfs.example.com
+    path: "/exports/data"
+----
+
+*PersistentVolumeClaim:* Solicitud de almacenamiento por parte del usuario (namespace).
+
+[source,yaml]
+----
+# pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd  # StorageClass específico
+----
+
+*Usar PVC en Pod:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-pod
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: my-pvc
+----
+
+*Access Modes:*
+
+* `ReadWriteOnce` (RWO) - Un nodo lectura-escritura
+* `ReadOnlyMany` (ROX) - Múltiples nodos solo lectura
+* `ReadWriteMany` (RWX) - Múltiples nodos lectura-escritura
+
+*Reclaim Policies:*
+
+* `Retain` - Conservar datos después de delete (requiere cleanup manual)
+* `Delete` - Eliminar PV y datos cuando PVC se elimina
+* `Recycle` - Limpiar PV (deprecated)
+
+[source,bash]
+----
+# Ver PersistentVolumes
+oc get pv
+oc describe pv pv-nfs
+
+# Ver PersistentVolumeClaims
+oc get pvc
+oc describe pvc my-pvc
+
+# Ver binding entre PV y PVC
+oc get pv -o wide
+oc get pvc -o wide
+
+# Eliminar PVC (PV según policy)
+oc delete pvc my-pvc
+----
+
+'''
+
+=== StorageClasses y aprovisionamiento dinámico
+
+*StorageClass:* Defines clases de almacenamiento con diferentes características (velocidad, redundancia).
+
+[source,yaml]
+----
+# storageclass.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: kubernetes.io/aws-ebs  # Proveedor de almacenamiento
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: gp3           # AWS EBS tipo
+  iops: "3000"
+  throughput: "125"
+volumeBindingMode: WaitForFirstConsumer
+----
+
+*OpenShift StorageClasses predefinidas:*
+
+[source,bash]
+----
+# Ver StorageClasses disponibles
+oc get storageclass
+
+# Marcar como default
+oc patch storageclass fast-ssd -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+# Ver default
+oc get storageclass | grep default
+----
+
+*PVC con aprovisionamiento dinámico:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-pvc
+spec:
+  storageClassName: fast-ssd
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+----
+
+[source,bash]
+----
+# Crear PVC
+oc apply -f dynamic-pvc.yaml
+
+# El PV se crea automáticamente
+oc get pv  # nuevo PV creado por el provisioner
+
+# Expandir PVC (si allowVolumeExpansion: true)
+oc patch pvc dynamic-pvc -p '{"spec":{"resources":{"requests":{"storage":"30Gi"}}}}'
+----
+
+'''
+
+== 3.2 StatefulSets y almacenamiento
+
+*volumeClaimTemplates:* Crea un PVC único por Pod en un StatefulSet.
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  serviceName: mysql
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: root-password
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 20Gi
+----
+
+[source,bash]
+----
+# Crear StatefulSet
+oc apply -f mysql-statefulset.yaml
+
+# Ver Pods con orden de creación
+oc get pods -l app=mysql -w
+
+# Ver PVCs creados (uno por Pod)
+oc get pvc
+# data-mysql-0, data-mysql-1, data-mysql-2
+
+# Escalar
+oc scale statefulset mysql --replicas=5
+# Crea mysql-3, mysql-4 (y sus PVCs correspondientes)
+
+# Acceder a datos específicos
+oc exec mysql-0 -- mysql -uroot -p... -e "SHOW DATABASES"
+----
+
+'''
+
+== 3.3 Snapshots y backups
+
+=== VolumeSnapshots
+
+VolumeSnapshot captura el estado de un PVC en un momento específico.
+
+[source,yaml]
+----
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: my-snapshot
+spec:
+  volumeSnapshotClassName: csi-snapshot-class
+  source:
+    persistentVolumeClaimName: my-pvc
+----
+
+[source,bash]
+----
+# Ver snapshots
+oc get volumesnapshot
+
+# Crear snapshot manualmente
+oc apply -f snapshot.yaml
+
+# Restaurar desde snapshot
+oc apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restored-pvc
+spec:
+  dataSource:
+    name: my-snapshot
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+EOF
+----
+
+=== Backup de datos
+
+*Usando Jobs para backups:*
+
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-database
+spec:
+  schedule: "0 2 * * *"  # Diario 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: mysql:8.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              mysqldump -h mysql-0.mysql \
+                -u root -p$MYSQL_ROOT_PASSWORD \
+                --all-databases > /backups/dump-$(date +%Y%m%d-%H%M%S).sql
+            env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+----
+
+'''
+
+== 3.4 Operadores de almacenamiento
+
+=== OpenShift Container Storage (OCS) / Red Hat OpenShift Data Foundation (RHDF)
+
+OCS/RHDF proporciona almacenamiento escalable y distribuido basado en Ceph.
+
+[source,bash]
+----
+# Instalar RHDF Operator
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: odf-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: odf-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Esperar a que se instale
+oc get csv -n openshift-operators -w
+
+# Ver StorageClasses creadas
+oc get storageclass
+
+# Crear StorageCluster
+oc apply -f - <<EOF
+apiVersion: ocs.openshift.io/v1
+kind: StorageCluster
+metadata:
+  name: ocs-storagecluster
+  namespace: openshift-storage
+spec:
+  manageNodes: false
+  monPVCTemplate:
+    spec:
+      storageClassName: gp2
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+  dataPVCTemplate:
+    spec:
+      storageClassName: gp2
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Gi
+  metadataPVCTemplate:
+    spec:
+      storageClassName: gp2
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+EOF
+
+# Monitorear creación
+oc get pods -n openshift-storage -w
+oc get storagecluster -n openshift-storage
+----
+
+'''
+
+=== CNS (Container Native Storage) con Ceph
+
+Ceph es un sistema de almacenamiento distribuido usado por OCS/RHDF.
+
+[source,bash]
+----
+# Ver pods de Ceph
+oc get pods -n openshift-storage -l app=ceph
+
+# Monitor (MON)
+oc get pods -n openshift-storage -l app=ceph-mon
+
+# OSD (Object Storage Daemon) - almacenamiento real
+oc get pods -n openshift-storage -l app=ceph-osd
+
+# Manager (MGR)
+oc get pods -n openshift-storage -l app=ceph-mgr
+
+# Ver estado de Ceph
+oc exec -n openshift-storage ceph-mon-0 -- ceph status
+
+# Ver uso de almacenamiento
+oc exec -n openshift-storage ceph-mon-0 -- ceph df
+----
+
+'''
+
+== 3.5 ConfigMaps y Secrets
+
+=== ConfigMaps: gestión de configuración
+
+*ConfigMap desde literal:*
+
+[source,bash]
+----
+oc create configmap app-config \
+  --from-literal=app.name=MyApp \
+  --from-literal=app.version=1.0
+
+# Ver
+oc get configmap app-config -o yaml
+----
+
+*ConfigMap desde archivo:*
+
+[source,bash]
+----
+# Crear archivo de config
+cat > application.properties << EOF
+app.name=MyApp
+app.version=1.0
+app.debug=true
+EOF
+
+# Crear ConfigMap
+oc create configmap app-config --from-file=application.properties
+
+# Desde directorio
+oc create configmap configs --from-file=./config-dir/
+----
+
+*ConfigMap en Pod:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  app.properties: |
+    app.name=MyApp
+    debug=true
+  database.conf: |
+    host=localhost
+    port=5432
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-app
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    # Opción 1: Como variables de entorno
+    env:
+    - name: APP_NAME
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: app.name
+    # Opción 2: Como volumen
+    volumeMounts:
+    - name: config
+      mountPath: /etc/config
+  volumes:
+  - name: config
+    configMap:
+      name: app-config
+----
+
+'''
+
+=== Secrets: manejo seguro de datos sensibles
+
+*Secret desde literal:*
+
+[source,bash]
+----
+oc create secret generic db-credentials \
+  --from-literal=username=admin \
+  --from-literal=password=secretpass123
+
+# Ver
+oc get secret db-credentials -o yaml
+# Nota: valores en base64 (NO encriptados)
+----
+
+*Secret desde archivos:*
+
+[source,bash]
+----
+# TLS secret
+oc create secret tls tls-secret \
+  --cert=server.crt \
+  --key=server.key
+
+# Docker registry secret
+oc create secret docker-registry reg-secret \
+  --docker-server=quay.io \
+  --docker-username=user \
+  --docker-password=pass \
+  --docker-email=user@example.com
+----
+
+*Secret en Pod:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+data:
+  username: YWRtaW4=           # base64 encoded
+  password: cGFzc3dvcmQEyMzQ= # base64 encoded
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-app
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    # Como variables de entorno
+    env:
+    - name: DB_USER
+      valueFrom:
+        secretKeyRef:
+          name: db-secret
+          key: username
+    - name: DB_PASS
+      valueFrom:
+        secretKeyRef:
+          name: db-secret
+          key: password
+    # Como volumen
+    volumeMounts:
+    - name: secret-vol
+      mountPath: /etc/secrets
+  volumes:
+  - name: secret-vol
+    secret:
+      secretName: db-secret
+----
+
+*Codificar/decodificar:*
+
+[source,bash]
+----
+# Codificar a base64
+echo -n "admin" | base64
+
+# Decodificar
+echo "YWRtaW4=" | base64 -d
+
+# Desde CLI
+oc create secret generic test --from-literal=pass=mypass -o yaml | less
+----
+
+*Diferencia entre Secret y ConfigMap:*
+
+* ConfigMap: Datos no sensibles (configuración)
+* Secret: Datos sensibles (passwords, tokens, claves)
+* Secret usa base64 (codificación, NO encriptación)
+* Recomendado: usar cifrado en reposo para Secrets
+
+'''
+
+== 3.6 Inicialización de Pods con Init Containers
+
+*Init Containers:* Contenedores que se ejecutan antes que el contenedor principal.
+
+Casos de uso:
+
+* Esperar a servicios dependientes
+* Descargar datos
+* Realizar setup previo
+* Validaciones previas
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+spec:
+  initContainers:
+  - name: wait-for-db
+    image: busybox
+    command: ['sh', '-c', 'until nc -z db-service 5432; do echo waiting for db; sleep 2; done']
+  - name: download-config
+    image: curl
+    command:
+    - /bin/sh
+    - -c
+    - |
+      curl -o /config/app.conf https://config-server/app.conf
+    volumeMounts:
+    - name: config-volume
+      mountPath: /config
+  containers:
+  - name: app
+    image: app:latest
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/app
+  volumes:
+  - name: config-volume
+    emptyDir: {}
+----
+
+[source,bash]
+----
+# Ver estado de init containers
+oc describe pod init-demo
+
+# Ver logs de init container
+oc logs init-demo -c wait-for-db
+oc logs init-demo -c download-config
+----
+
+'''
+
+== 3.7 Lifecycle hooks
+
+*Hooks de ciclo de vida:*
+
+* `PostStart` - Ejecuta después de que el contenedor inicia
+* `PreStop` - Ejecuta antes de que el contenedor se termine
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-demo
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    lifecycle:
+      postStart:
+        exec:
+          command: ["/bin/sh", "-c", "echo App started >> /var/log/startup.log"]
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "sleep 15"]  # Grace period
+----
+
+[source,bash]
+----
+# Ver hooks aplicados
+oc describe pod lifecycle-demo | grep -A5 Lifecycle
+----

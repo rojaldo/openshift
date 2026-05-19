@@ -1,0 +1,125 @@
+= Temario: OpenShift Container Platform
+:doctype: article
+:toc: left
+:toc-title: Contenidos
+:toclevels: 2
+:icons: font
+:lang: es
+
+== Día 1 — Contenedores y la Plataforma de Orquestación
+
+=== 1.1 Introducción a los contenedores
+* Qué es un contenedor y diferencias con una máquina virtual
+* Namespaces y cgroups del kernel Linux
+* Imágenes OCI: capas, registros y etiquetas
+* Gestión de contenedores con Podman
+
+=== 1.2 Arquitectura del clúster OpenShift
+* Componentes del control plane: API Server, etcd, Scheduler, Controller Manager
+* Componentes del nodo: kubelet, kube-proxy, CRI
+* Flujo de despliegue de un Pod en OpenShift
+
+=== 1.3 Recursos básicos del clúster
+* Pods: ciclo de vida y estados
+* ReplicaSets y Deployments
+* Services: ClusterIP, NodePort, LoadBalancer
+* Proyectos y organización de recursos en OpenShift
+
+=== 1.4 Configuración de aplicaciones
+* ConfigMaps
+* Secrets
+* Variables de entorno y montaje como volúmenes
+
+=== 1.5 Almacenamiento
+* Volumes efímeros
+* PersistentVolumes y PersistentVolumeClaims
+* StorageClasses y aprovisionamiento dinámico
+
+---
+
+== Día 2 — Orquestación Avanzada en OpenShift
+
+=== 2.1 Networking
+* Modelo de red de pods: OVN-Kubernetes en OpenShift
+* DNS interno del clúster
+* Routes e Ingress en OpenShift: reglas y TLS
+* NetworkPolicies
+
+=== 2.2 Cargas de trabajo avanzadas
+* StatefulSets
+* DaemonSets
+* Jobs y CronJobs
+* Horizontal Pod Autoscaler (HPA)
+
+=== 2.3 Seguridad en el clúster
+* RBAC: Roles, ClusterRoles y RoleBindings
+* ServiceAccounts
+* Pod Security Admission (PSA)
+* Gestión de secretos: buenas prácticas
+
+=== 2.4 Gestión de recursos
+* Requests y Limits de CPU y memoria
+* LimitRange y ResourceQuota
+* Quality of Service: Guaranteed, Burstable, BestEffort
+
+---
+
+== Día 3 — OpenShift
+
+=== 3.1 Introducción a OpenShift Container Platform
+* OpenShift como distribución empresarial: OKD vs OCP
+* Arquitectura de OpenShift Container Platform
+* Opciones de instalación: IPI, UPI, SNO, OpenShift Local (CRC)
+* Consola web: perspectiva de Administrador y de Desarrollador
+* CLI `oc`: comandos esenciales
+
+=== 3.2 Proyectos y construcción de imágenes
+* Proyectos en OpenShift: modelo multi-tenant sobre namespaces
+* ImageStreams y etiquetado de imágenes
+* Source-to-Image (S2I)
+* BuildConfig: tipos de build (Source, Dockerfile, Binary)
+* Integración con registros externos
+
+=== 3.3 Despliegue y exposición de aplicaciones
+* `oc new-app`: flujo completo
+* Routes: Edge, Passthrough y Re-encrypt TLS
+* DeploymentConfig (legacy) vs. Deployment
+* Estrategias: Rolling, Recreate, Blue/Green, Canary
+
+=== 3.4 Seguridad específica de OpenShift
+* Security Context Constraints (SCC)
+* Relación SCC ↔ ServiceAccount
+* OAuth integrado: proveedores de identidad
+* Gestión de certificados del clúster
+
+---
+
+== Día 4 — OpenShift: Plataforma Avanzada
+
+=== 4.1 Scheduling avanzado
+* Node selectors, taints y tolerations
+* Pod Affinity y Anti-Affinity
+* Priority Classes
+
+=== 4.2 Helm en OpenShift
+* Estructura de un chart
+* Instalación, actualización y rollback de releases
+* Repositorios de charts y customización con `values.yaml`
+
+=== 4.3 Operators y ciclo de vida de la plataforma
+* Qué es un Operator y el patrón de reconciliación
+* OperatorHub y Operator Lifecycle Manager (OLM)
+* Operators de plataforma: Pipelines, GitOps, Logging, Service Mesh
+* Cluster Version Operator (CVO) y actualizaciones del clúster
+* Machine Config Operator (MCO) y MachineConfigPools
+
+=== 4.4 CI/CD y GitOps
+* OpenShift Pipelines (Tekton): Tasks, Pipelines, Triggers
+* OpenShift GitOps (ArgoCD): Applications, sincronización, entornos
+* Estrategias de promoción entre entornos con Kustomize y Helm
+
+=== 4.5 Observabilidad
+* Stack de monitorización: Prometheus, Alertmanager, Grafana
+* Métricas de plataforma y métricas de usuario
+* Stack de logging: OpenShift Logging con Loki
+* Distributed tracing: OpenTelemetry y Tempo

@@ -1,0 +1,1409 @@
+= OpenShift Container Platform - Día 2
+== Orquestación Avanzada en OpenShift
+
+'''
+
+== 2.1 Networking
+
+=== Modelo de red de pods: OVN-Kubernetes en OpenShift
+
+OpenShift usa *OVN-Kubernetes* como plugin de red (CNI) por defecto, que implementa una red overlay con Open vSwitch.
+
+*Características del modelo de red:*
+
+* Cada Pod tiene su propia dirección IP
+* Los Pods pueden comunicarse entre sí sin NAT
+* Los nodos pueden comunicarse con todos los Pods sin NAT
+* La IP que un Pod ve es la misma que los demás ven
+
+*OVN-Kubernetes proporciona:*
+
+* Red overlay con VXLAN/Geneve
+* NetworkPolicies avanzadas
+* IPsec para cifrado de tráfico entre nodos
+* Egress IP para tráfico saliente predecible
+* Soporte para múltiples redes (Multus)
+
+*Arquitectura OVN-Kubernetes:*
+
+[source]
+----
+┌─────────────────────────────────────────────────────┐
+│                   Master Nodes                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │ ovnkube-    │  │ ovnkube-    │  │ ovnkube-    │ │
+│  │ master      │  │ master      │  │ master      │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘ │
+│         │                │                │         │
+│         └────────────────┴────────────────┘         │
+│                          │                          │
+│                   OVN Northbound                    │
+│                    Database                         │
+└─────────────────────────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                                     │
+┌───────┴───────┐                    ┌───────┴───────┐
+│  Worker Node  │                    │  Worker Node  │
+│ ┌───────────┐ │                    │ ┌───────────┐ │
+│ │ ovnkube-  │ │                    │ │ ovnkube-  │ │
+│ │ node      │ │                    │ │ node      │ │
+│ └───────────┘ │                    │ └───────────┘ │
+│ ┌───────────┐ │                    │ ┌───────────┐ │
+│ │ Pod A     │ │                    │ │ Pod B     │ │
+│ │ 10.128.1.2│◄├────────────────────┼─┤ 10.129.1.5│ │
+│ └───────────┘ │    (VXLAN overlay) │ └───────────┘ │
+└───────────────┘                    └───────────────┘
+----
+
+*Ejemplo - Explorar la red del clúster:*
+
+[source,bash]
+----
+# Ver configuración de red del clúster
+oc get network.config/cluster -o yaml
+
+# Ver pods de red
+oc get pods -n openshift-ovn-kubernetes
+
+# Ver configuración de nodo específico
+oc get nodenetworkconfigurationenclave -A
+
+# Inspeccionar un Pod de red
+oc exec -n openshift-ovn-kubernetes -c ovnkube-node \
+  $(oc get pods -n openshift-ovn-kubernetes -l app=ovnkube-node \
+  -o jsonpath='{.items[0].metadata.name}') -- ovn-nbctl show
+
+# Ver rangos de IP asignados
+oc get network-attachment-definitions -A
+oc get ipaddresspools -A
+----
+
+'''
+
+=== DNS interno del clúster
+
+OpenShift corre CoreDNS como servidor DNS interno del clúster.
+
+*Nomenclatura DNS:*
+
+----
+<servicio>.<namespace>.svc.cluster.local
+----
+
+*Ejemplos:*
+
+* `webapp` → servicio en el mismo namespace
+* `webapp.mi-proyecto` → servicio en otro namespace
+* `webapp.mi-proyecto.svc` → forma explícita
+* `webapp.mi-proyecto.svc.cluster.local` → FQDN completo
+
+*Registros DNS automáticos:*
+
+* *Services:* `<service>.<ns>.svc.cluster.local` → ClusterIP
+* *Headless Services:* Cada Pod obtiene: `<pod-ip>.<service>.<ns>.svc.cluster.local`
+* *ExternalName:* Alias a DNS externo
+
+*Ejemplo - Explorar DNS:*
+
+[source,yaml]
+----
+# dns-test.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-test
+spec:
+  containers:
+  - name: test
+    image: busybox
+    command: ["sleep", "3600"]
+----
+
+[source,bash]
+----
+# Crear pod de prueba
+oc apply -f dns-test.yaml
+
+# Probar resolución DNS
+oc exec dns-test -- nslookup kubernetes
+
+# Ver desde dentro del Pod
+oc exec -it dns-test -- sh
+# Dentro del contenedor:
+cat /etc/resolv.conf
+# search mi-proyecto.svc.cluster.local svc.cluster.local cluster.local
+# nameserver 10.96.0.10
+
+nslookup kubernetes
+# Server:    10.96.0.10
+# Address:   10.96.0.10:53
+# Name:      kubernetes.default.svc.cluster.local
+# Address:   10.96.0.1
+
+# Probar otros servicios
+nslookup webapp
+nslookup webapp.otro-proyecto
+
+exit
+----
+
+*Configurar DNS personalizado:*
+
+[source,yaml]
+----
+# custom-dns.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: openshift-dns
+data:
+  example.server: |
+    example.com {
+        forward . 8.8.8.8:53
+    }
+----
+
+'''
+
+=== Routes e Ingress en OpenShift
+
+En Kubernetes se usa Ingress, pero OpenShift usa *Routes*, que son más simples y con más features.
+
+*Tipos de TLS en Routes:*
+
+*Edge (por defecto):*
+
+* El router termina TLS
+* El tráfico al backend es HTTP
+* Certificado gestionado por OpenShift
+
+*Passthrough:*
+
+* El router NO termina TLS
+* El tráfico llega cifrado al Pod
+* El Pod debe tener certificado
+
+*Re-encrypt:*
+
+* El router termina TLS del cliente
+* Establece nueva conexión TLS al backend
+* Útil cuando necesitas TLS end-to-end con certificados diferentes
+
+*Ejemplos de Routes:*
+
+[source,yaml]
+----
+# route-edge.yaml - Route con TLS Edge
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webapp-edge
+spec:
+  host: webapp.apps.micluster.example.com
+  to:
+    kind: Service
+    name: webapp
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Allow
+----
+
+[source,yaml]
+----
+# route-passthrough.yaml - Route con TLS Passthrough
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webapp-passthrough
+spec:
+  host: secure.apps.micluster.example.com
+  to:
+    kind: Service
+    name: webapp-secure
+  tls:
+    termination: passthrough
+----
+
+[source,yaml]
+----
+# route-reencrypt.yaml - Route con TLS Re-encrypt
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webapp-reencrypt
+spec:
+  host: secure.apps.micluster.example.com
+  to:
+    kind: Service
+    name: webapp
+  tls:
+    termination: reencrypt
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    destinationCACertificate: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+----
+
+*Comandos de gestión:*
+
+[source,bash]
+----
+# Crear Route simple
+oc expose service webapp
+
+# Crear Route con hostname personalizado
+oc expose service webapp --hostname=miapp.apps.cluster.example.com
+
+# Crear Route con TLS
+oc create route edge webapp-secure --service=webapp --hostname=secure.apps.cluster.example.com
+
+# Ver Routes
+oc get routes
+oc get route webapp -o yaml
+
+# Ver certificado de Route
+oc get route webapp-secure -o jsonpath='{.spec.tls.certificate}' | openssl x509 -text -noout
+
+# Probar Route
+curl -k https://webapp.apps.cluster.example.com
+----
+
+*Path-based routing:*
+
+[source,yaml]
+----
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: multi-path
+spec:
+  host: api.apps.cluster.example.com
+  path: /api/v1
+  to:
+    kind: Service
+    name: api-v1
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: multi-path-v2
+spec:
+  host: api.apps.cluster.example.com
+  path: /api/v2
+  to:
+    kind: Service
+    name: api-v2
+  wildcardPolicy: None
+----
+
+'''
+
+=== NetworkPolicies
+
+Por defecto, OpenShift permite todo el tráfico entre Pods. Las NetworkPolicies restringen la comunicación.
+
+*Tipos de reglas:*
+
+* `podSelector` - Selecciona Pods destino
+* `namespaceSelector` - Selecciona namespaces
+* `ipBlock` - Bloques CIDR de IP
+* `ports` - Puertos específicos
+
+*Políticas de entrada/egreso:*
+
+* Sin policy: Todo permitido
+* Con policy de ingress: Solo lo especificado permitido
+* Con policy de egress: Solo lo especificado permitido
+
+*Ejemplo - Denegar todo el tráfico entrante:*
+
+[source,yaml]
+----
+# deny-all-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+spec:
+  podSelector: {}  # Aplica a todos los Pods del namespace
+  policyTypes:
+  - Ingress
+  # Sin reglas ingress = todo denegado
+----
+
+*Ejemplo - Permitir solo tráfico desde un namespace específico:*
+
+[source,yaml]
+----
+# allow-from-namespace.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: frontend-namespace
+    ports:
+    - protocol: TCP
+      port: 8080
+----
+
+*Ejemplo - Permitir tráfico solo con etiquetas específicas:*
+
+[source,yaml]
+----
+# allow-labeled-pods.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: web
+    ports:
+    - protocol: TCP
+      port: 3000
+----
+
+*Ejemplo - Egress restringido:*
+
+[source,yaml]
+----
+# restrict-egress.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dns
+spec:
+  podSelector:
+    matchLabels:
+      app: app
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: openshift-dns
+    ports:
+    - protocol: UDP
+      port: 53
+----
+
+*Gestión de NetworkPolicies:*
+
+[source,bash]
+----
+# Crear NetworkPolicy
+oc apply -f deny-all-ingress.yaml
+
+# Ver NetworkPolicies
+oc get networkpolicy
+oc describe networkpolicy deny-all-ingress
+
+# Probar conectividad
+oc exec -it deployment/webapp -- curl backend-service:8080
+# Debería fallar si la policy lo deniega
+
+# Eliminar
+oc delete networkpolicy deny-all-ingress
+----
+
+'''
+
+== 2.2 Cargas de trabajo avanzadas
+
+=== StatefulSets
+
+StatefulSet gestiona aplicaciones con estado que requieren:
+
+* Identidad de Pod estable (nombre predecible)
+* Almacenamiento persistente por Pod
+* Orden de despliegue y escalado garantizado
+
+*Diferencias con Deployment:*
+
+[cols="1,1,1"]
+|===
+|Característica |Deployment |StatefulSet
+
+|Nombres de Pods
+|Aleatorios
+|Predecibles (app-0, app-1, app-2)
+
+|Almacenamiento
+|Compartido
+|Dedicado por Pod
+
+|Escalado
+|Paralelo
+|Secuencial
+
+|Actualizaciones
+|Desordenadas
+|Ordenadas
+
+|Network Identity
+|Ninguna
+|Headless Service + DNS por Pod
+|===
+
+*Ejemplo - StatefulSet para base de datos:*
+
+[source,yaml]
+----
+# statefulset-postgres.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+spec:
+  clusterIP: None  # Headless
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+----
+
+[source,bash]
+----
+# Crear StatefulSet
+oc apply -f statefulset-postgres.yaml
+
+# Ver StatefulSet y Pods
+oc get statefulset
+oc get pods -l app=postgres
+# NAME         READY   STATUS
+# postgres-0   1/1     Running
+# postgres-1   1/1     Running
+# postgres-2   1/1     Running
+
+# Ver PVCs creados
+oc get pvc
+# Cada Pod tiene su PVC: data-postgres-0, data-postgres-1, data-postgres-2
+
+# Probar DNS por Pod
+oc run test --rm -it --image=busybox -- \
+  nslookup postgres-0.postgres-headless
+
+# Escalar (secuencial)
+oc scale statefulset postgres --replicas=5
+# Crea postgres-3, luego postgres-4
+
+# Reducir (en orden inverso)
+oc scale statefulset postgres --replicas=2
+# Elimina postgres-4, luego postgres-3
+----
+
+'''
+
+=== DaemonSets
+
+DaemonSet asegura que un Pod corra en *todos* los nodos (o un subset). Usado para:
+
+* Agentes de monitoring (Node Exporter)
+* Log collectors (Fluentd)
+* Network plugins
+* Storage plugins
+
+[source,yaml]
+----
+# daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: log-collector
+spec:
+  selector:
+    matchLabels:
+      app: log-collector
+  template:
+    metadata:
+      labels:
+        app: log-collector
+    spec:
+      hostNetwork: true
+      containers:
+      - name: fluentd
+        image: fluent/fluentd:latest
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+----
+
+[source,bash]
+----
+# Crear DaemonSet
+oc apply -f daemonset.yaml
+
+# Ver DaemonSet
+oc get daemonset
+oc get pods -l app=log-collector -o wide
+# Deberías ver un Pod por nodo
+
+# Ver detalles
+oc describe daemonset log-collector
+
+# Actualizar DaemonSet
+oc set image daemonset/log-collector fluentd=fluentd:v1.15
+
+# Ver rollout
+oc rollout status daemonset/log-collector
+----
+
+'''
+
+=== Jobs y CronJobs
+
+*Jobs:* Ejecutan tareas hasta completar con éxito.
+
+*Tipos de Jobs:*
+
+* *Non-parallel:* 1 Pod hasta completar
+* *Parallel:* Múltiples Pods en paralelo
+* *Work queue:* Los Pods toman trabajo de una cola
+
+[source,yaml]
+----
+# job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-job
+spec:
+  completions: 1           # Número de Pods exitosos necesarios
+  parallelism: 1           # Máximo de Pods en paralelo
+  backoffLimit: 3          # Reintentos antes de fallar
+  activeDeadlineSeconds: 300  # Timeout
+  template:
+    metadata:
+      labels:
+        app: backup
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: backup
+        image: ubuntu
+        command: ["bash", "-c", "tar czf /backup/app.tar.gz /app && echo 'Backup complete'"]
+        volumeMounts:
+        - name: backup-volume
+          mountPath: /backup
+      volumes:
+      - name: backup-volume
+        persistentVolumeClaim:
+          claimName: backup-pvc
+----
+
+*Job paralelo:*
+
+[source,yaml]
+----
+# parallel-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: process-items
+spec:
+  completions: 10       # 10 Pods deben completar
+  parallelism: 3        # Máximo 3 en paralelo
+  template:
+    metadata:
+      labels:
+        app: processor
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: processor
+        image: ubuntu
+        command: ["bash", "-c", "echo Processing item && sleep 10"]
+----
+
+*CronJob:* Jobs programados con expresión cron.
+
+[source,yaml]
+----
+# cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-backup
+spec:
+  schedule: "0 2 * * *"  # Diario a las 2:00 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: backup-tool:latest
+----
+
+*Gestión de Jobs:*
+
+[source,bash]
+----
+# Crear Job
+oc apply -f job.yaml
+
+# Ver Jobs
+oc get jobs
+
+# Ver Pods del Job
+oc get pods -l job-name=backup-job
+
+# Ver logs
+oc logs job/backup-job
+
+# Job paralelo
+oc apply -f parallel-job.yaml
+oc get pods -w  # ver cómo se crean de 3 en 3
+
+# CronJob
+oc apply -f cronjob.yaml
+oc get cronjobs
+oc get jobs  # Jobs creados por el CronJob
+
+# Ejecutar CronJob manualmente
+oc create job manual-backup --from=cronjob/daily-backup
+
+# Suspender CronJob
+oc patch cronjob daily-backup -p '{"spec":{"suspend":true}}'
+
+# Eliminar Jobs
+oc delete job backup-job
+oc delete cronjob daily-backup
+----
+
+'''
+
+=== Horizontal Pod Autoscaler (HPA)
+
+HPA escala Deployments/StatefulSets automáticamente basado en métricas:
+
+* CPU
+* Memoria
+* Métricas custom (Prometheus)
+
+[source,yaml]
+----
+# hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: webapp-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: webapp
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+----
+
+*Requisitos:*
+
+* El Deployment debe tener `resources.requests` definidos
+* Metrics Server debe estar instalado
+
+[source,bash]
+----
+# Verificar metrics server
+oc get pods -n openshift-monitoring | grep metrics
+
+# Crear HPA
+oc apply -f hpa.yaml
+
+# Ver HPA
+oc get hpa
+oc describe hpa webapp-hpa
+
+# HPA rápido desde CLI
+oc autoscale deployment webapp --min=2 --max=5 --cpu-percent=70
+
+# Probar escalado (generar carga)
+oc run load-generator --rm -it --image=busybox -- \
+  /bin/sh -c "while sleep 0.01; do wget -q -O- http://webapp; done"
+
+# Ver escalado en tiempo real
+oc get hpa webapp-hpa -w
+
+# Ver historial de escalado
+oc describe hpa webapp-hpa | grep -A10 Events
+----
+
+'''
+
+== 2.3 Seguridad en el clúster
+
+=== RBAC: Roles, ClusterRoles y RoleBindings
+
+*RBAC* (Role-Based Access Control) define quién puede hacer qué en el clúster.
+
+*Componentes:*
+
+* *Role:* Permisos dentro de un namespace
+* *ClusterRole:* Permisos a nivel de clúster
+* *RoleBinding:* Vincula Role a usuarios/grupos en un namespace
+* *ClusterRoleBinding:* Vincula ClusterRole a usuarios/grupos a nivel global
+
+[source,yaml]
+----
+# role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer-role
+  namespace: mi-proyecto
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
+- apiGroups: ["route.openshift.io"]
+  resources: ["routes"]
+  verbs: ["get", "list", "watch", "create", "update", "delete"]
+----
+
+[source,yaml]
+----
+# rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+  namespace: mi-proyecto
+subjects:
+- kind: User
+  name: developer1
+  apiGroup: rbac.authorization.k8s.io
+- kind: Group
+  name: developers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer-role
+  apiGroup: rbac.authorization.k8s.io
+----
+
+*ClusterRole de solo lectura:*
+
+[source,yaml]
+----
+# clusterrole-view.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-viewer
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "nodes", "namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+----
+
+*Roles predefinidos en OpenShift:*
+
+* `admin` - Control total del proyecto
+* `edit` - Crear/modificar recursos, sin roles ni security
+* `view` - Solo lectura
+* `cluster-admin` - Super-admin del clúster
+
+[source,bash]
+----
+# Ver roles en namespace
+oc get roles
+
+# Ver ClusterRoles
+oc get clusterroles | head -20
+
+# Ver RoleBindings
+oc get rolebindings
+
+# Asignar rol predefinido
+oc adm policy add-role-to-user edit developer1 -n mi-proyecto
+oc adm policy add-role-to-user admin admin1 -n mi-proyecto
+
+# Asignar rol de cluster-admin (con cuidado)
+oc adm policy add-cluster-role-to-user cluster-admin admin
+
+# Ver permisos de usuario
+oc auth can-i --list --as=developer1
+oc auth can-i create pods --as=developer1 -n mi-proyecto
+oc auth can-i delete nodes --as=developer1
+
+# Eliminar binding
+oc adm policy remove-role-from-user edit developer1 -n mi-proyecto
+----
+
+'''
+
+=== ServiceAccounts
+
+ServiceAccounts representan identidades para procesos dentro del clúster.
+
+*ServiceAccount por defecto:*
+Cada namespace tiene `default` SA, usada por Pods sin SA especificado.
+
+[source,yaml]
+----
+# serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: build-bot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: builder-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: ["image.openshift.io"]
+  resources: ["imagestreams"]
+  verbs: ["get", "list", "watch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: build-bot-binding
+subjects:
+- kind: ServiceAccount
+  name: build-bot
+roleRef:
+  kind: Role
+  name: builder-role
+----
+
+*Usar ServiceAccount en Pod:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-pod
+spec:
+  serviceAccountName: build-bot
+  containers:
+  - name: api
+    image: api-app:latest
+----
+
+[source,bash]
+----
+# Crear ServiceAccount
+oc create serviceaccount build-bot
+
+# Ver ServiceAccounts
+oc get serviceaccounts
+
+# Ver token de ServiceAccount (montado en Pods)
+oc describe serviceaccount build-bot
+
+# Asignar rol
+oc adm policy add-role-to-user edit -z build-bot
+
+# Ver secrets del SA
+oc get secrets | grep build-bot
+
+# Token JWT para APIs externas
+oc create token build-bot --duration=24h
+----
+
+'''
+
+=== Pod Security Admission (PSA)
+
+PSA reemplaza PodSecurityPolicies (deprecados). Controla permisos de seguridad de Pods.
+
+*Niveles de PSA:*
+
+* *Privileged:* Sin restricciones
+* *Baseline:* Restricciones mínimas
+* *Restricted:* Restricciones fuertes (requiere runAsNonRoot, etc.)
+
+*Modos:*
+
+* *Enforce:* Bloquea violaciones
+* *Audit:* Registra pero permite
+* *Warn:* Avisa pero permite
+
+*Configurar PSA en namespace:*
+
+[source,yaml]
+----
+# namespace-psa.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-apps
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+----
+
+*Pod compatible con restricted:*
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secure-pod
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: app:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+----
+
+[source,bash]
+----
+# Verificar PSA en namespace
+oc get namespace secure-apps -o yaml | grep pod-security
+
+# Probar Pod que viola PSA
+cat <<EOF | oc apply -f - --dry-run=client
+apiVersion: v1
+kind: Pod
+metadata:
+  name: insecure-pod
+  namespace: secure-apps
+spec:
+  containers:
+  - name: test
+    image: nginx
+    securityContext:
+      privileged: true
+EOF
+# Warning: would violate PodSecurity
+
+# Verificar PSA activo
+oc auth can-i create pods --as=system:anonymous -n secure-apps
+----
+
+'''
+
+=== Gestión de secretos: buenas prácticas
+
+*Problema:* Secrets en base64 NO están encriptados, solo codificados.
+
+*Mejores prácticas:*
+
+*1. No versionar Secrets en Git:*
+
+[source,bash]
+----
+# Mal: commit del secret
+git add secret.yaml  # NO
+
+# Bien: usar SealedSecrets, External Secrets Operator, o inyección en CI/CD
+----
+
+*2. Cifrado en reposo:*
+
+[source,bash]
+----
+# Verificar cifrado activo
+oc get encryptionconfig -o yaml
+----
+
+*3. RBAC estricto:*
+
+[source,bash]
+----
+# Solo ServiceAccounts necesarios pueden leer secrets
+oc auth can-i get secrets --as=system:serviceaccount:mi-proyecto:default
+----
+
+*4. Usar proveedores externos:*
+
+* HashiCorp Vault
+* AWS Secrets Manager
+* Azure Key Vault
+* External Secrets Operator
+
+*Ejemplo con External Secrets Operator:*
+
+[source,yaml]
+----
+# ExternalSecret apunta a Vault
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-credentials
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: db-secret
+  data:
+  - secretKey: username
+    remoteRef:
+      key: secret/database/username
+  - secretKey: password
+    remoteRef:
+      key: secret/database/password
+----
+
+*5. Rotación de secrets:*
+
+[source,yaml]
+----
+# Job que rota secret periódicamente
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: rotate-db-password
+spec:
+  schedule: "0 0 1 * *"  # Mensual
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: rotator
+            image: db-rotator:latest
+            env:
+            - name: OLD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+----
+
+'''
+
+== 2.4 Gestión de recursos
+
+=== Requests y Limits de CPU y memoria
+
+*Requests:* Lo que el Pod garantiza recibir (usado para scheduling).
+*Limits:* Máximo que el Pod puede consumir.
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-demo
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    resources:
+      requests:
+        cpu: 100m              # 0.1 cores
+        memory: 128Mi          # 128 MB
+      limits:
+        cpu: 500m              # 0.5 cores máximo
+        memory: 512Mi          # 512 MB máximo
+----
+
+*Unidades:*
+
+* CPU: `m` (millicores), `1` = 1 core, `100m` = 0.1 cores
+* Memoria: `Ki`, `Mi`, `Gi`, `Ti` (potencias de 1024), `K`, `M`, `G` (potencias de 1000)
+
+*Comportamiento:*
+
+* CPU: Se limita con throttling (el proceso se ralentiza)
+* Memoria: Si excede limit → OOMKilled (terminado)
+
+[source,bash]
+----
+# Ver recursos de Pods
+oc get pods -o custom-columns=NAME:.metadata.name,\
+CPU_REQ:.spec.containers[*].resources.requests.cpu,\
+MEM_REQ:.spec.containers[*].resources.requests.memory,\
+CPU_LIM:.spec.containers[*].resources.limits.cpu,\
+MEM_LIM:.spec.containers[*].resources.limits.memory
+
+# Ver uso real
+oc adm top pods
+oc adm top nodes
+
+# Stress test para ver limits
+oc run stress --rm -it --image=progrium/stress -- \
+  --cpu 2 --timeout 30s
+# Si el limit es 500m, se throttleará
+----
+
+'''
+
+=== LimitRange y ResourceQuota
+
+*LimitRange:* Límites por defecto y máximos a nivel de container/pod.
+
+[source,yaml]
+----
+# limitrange.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: project-limits
+spec:
+  limits:
+  - max:
+      cpu: "2"
+      memory: 2Gi
+    min:
+      cpu: 50m
+      memory: 64Mi
+    default:
+      cpu: 500m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    type: Container
+  - max:
+      cpu: "4"
+      memory: 4Gi
+    min:
+      cpu: 100m
+      memory: 128Mi
+    type: Pod
+----
+
+*ResourceQuota:* Límites agregados a nivel de namespace.
+
+[source,yaml]
+----
+# resourcequota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: project-quota
+spec:
+  hard:
+    pods: "50"
+    requests.cpu: "10"
+    requests.memory: 10Gi
+    limits.cpu: "20"
+    limits.memory: 20Gi
+    persistentvolumeclaims: "10"
+    services: "5"
+----
+
+[source,bash]
+----
+# Aplicar LimitRange y ResourceQuota
+oc apply -f limitrange.yaml
+oc apply -f resourcequota.yaml
+
+# Ver LimitRange
+oc get limitrange
+oc describe limitrange project-limits
+
+# Ver ResourceQuota
+oc get resourcequota
+oc describe resourcequota project-quota
+
+# Ver uso de quota
+oc describe quota
+
+# Probar límite excedido
+oc run too-many-pods --image=nginx --replicas=15
+# Error: exceeded quota: project-quota, requested: pods=15
+----
+
+'''
+
+=== Quality of Service: Guaranteed, Burstable, BestEffort
+
+QoS se asigna automáticamente según requests/limits:
+
+*Guaranteed:*
+
+* Todos los containers tienen `requests` y `limits` definidos
+* `requests.cpu == limits.cpu`
+* `requests.memory == limits.memory`
+* Mayor prioridad (menos probable ser evictado)
+* CPU garantizada, sin throttling
+
+*Burstable:*
+
+* Al menos un container tiene `requests` pero no todos tienen `limits`
+* O `requests` ≠ `limits`
+* Prioridad media
+* Se puede usar CPU/memoria extra si disponible
+
+*BestEffort:*
+
+* Ningún container tiene `requests` o `limits`
+* Prioridad baja (primeros en ser evictados)
+* Sin garantías
+
+[source,yaml]
+----
+# guaranteed.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: guaranteed-pod
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+# QoS: Guaranteed
+---
+# burstable.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: burstable-pod
+spec:
+  containers:
+  - name: app
+    image: app:latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+# QoS: Burstable
+---
+# besteffort.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: besteffort-pod
+spec:
+  containers:
+  - name: app
+    image: app:latest
+# QoS: BestEffort
+----
+
+[source,bash]
+----
+# Ver QoS de un Pod
+oc get pod <pod-name> -o jsonpath='{.status.qosClass}'
+
+# Ver todos con su QoS
+oc get pods -o custom-columns=NAME:.metadata.name,QOS:.status.qosClass
+
+# Durante eviction, orden: BestEffort → Burstable → Guaranteed
+----
