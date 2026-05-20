@@ -1,4 +1,9 @@
-= OpenShift Container Platform - Día 3
+= OpenShift Container Platform - Día 3:toc: left
+:icons: font
+:source-highlighter: highlight.js
+:toclevels: 3
+:toc-title: Contenidos
+
 == Almacenamiento y Persistencia
 
 '''

@@ -1,4 +1,10 @@
 = OpenShift Container Platform - Día 1
+:toc: left
+:icons: font
+:source-highlighter: highlight.js
+:toclevels: 3
+:toc-title: Contenidos
+
 == Contenedores y la Plataforma de Orquestación
 
 '''

@@ -1,4 +1,10 @@
 = OpenShift Container Platform - Día 4
+:toc: left
+:icons: font
+:source-highlighter: highlight.js
+:toclevels: 3
+:toc-title: Contenidos
+
 == OpenShift: Plataforma Avanzada
 
 '''

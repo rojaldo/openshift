@@ -1,0 +1,89 @@
+---
+# Service: expone el Deployment en la red
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-world
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+
+---
+# Deployment: gestiona las replicas y actualizaciones
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-deployment
+  namespace: default
+spec:
+  # El ReplicaSet se crea automáticamente desde este Deployment
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-world
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+      - name: hello-world
+        image: busybox:unstable
+        # Comando que ejecuta un servidor web simple que devuelve Hello World
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo '<html>
+            <head><title>Hello World</title></head>
+            <body><h1>Hello World</h1></body>
+            </html>' > index.html && httpd -f -p 8080
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        # Probes para verificar que el contenedor está listo
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Verifica que devuelve 200 OK por HTTP
+              status=$(wget -q -O- --server-response http://localhost:8080/ 2>&1 | head -1 | awk '{print $2}')
+              if [ "$status" = "200" ]; then
+                exit 0
+              else
+                exit 1
+              fi
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        # Recursos asignados
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"

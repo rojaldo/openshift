@@ -1,0 +1,21 @@
+# pod-multi.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container
+spec:
+  containers:
+  - name: app
+    image: nginx:alpine
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log/nginx
+  - name: sidecar
+    image: busybox
+    command: ["sh", "-c", "tail -f /logs/access.log"]
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /logs
+  volumes:
+  - name: shared-logs
+    emptyDir: {}

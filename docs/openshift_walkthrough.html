@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<title>OpenShift Container Platform - Día 1</title>
+<title>Walkthrough OpenShift - Guía de Demostración</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -438,51 +438,995 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
-<h1>OpenShift Container Platform - Día 1</h1>
+<h1>Walkthrough OpenShift - Guía de Demostración</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Contenidos</div>
 <ul class="sectlevel1">
-<li><a href="#_contenedores_y_la_plataforma_de_orquestación">Contenedores y la Plataforma de Orquestación</a></li>
-<li><a href="#_1_1_introducción_a_los_contenedores">1.1 Introducción a los contenedores</a>
+<li><a href="#_objetivo">Objetivo</a></li>
+<li><a href="#_prerrequisitos">Prerrequisitos</a>
 <ul class="sectlevel2">
-<li><a href="#_qué_es_un_contenedor">¿Qué es un contenedor?</a></li>
-<li><a href="#_namespaces_y_cgroups_la_magia_del_kernel_linux">Namespaces y cgroups: la magia del kernel Linux</a></li>
-<li><a href="#_imágenes_oci_capas_registros_y_etiquetas">Imágenes OCI: capas, registros y etiquetas</a></li>
-<li><a href="#_gestión_de_contenedores_con_podman">Gestión de contenedores con Podman</a></li>
+<li><a href="#_verificar_conexión">Verificar conexión</a></li>
 </ul>
 </li>
-<li><a href="#_1_2_arquitectura_del_clúster_openshift">1.2 Arquitectura del clúster OpenShift</a>
+<li><a href="#_1_proyectos_namespaces_con_seguridad_mejorada">1. Proyectos (Namespaces con seguridad mejorada)</a></li>
+<li><a href="#_2_security_context_constraints_scc">2. Security Context Constraints (SCC)</a>
 <ul class="sectlevel2">
-<li><a href="#_componentes_del_control_plane_master_node">Componentes del Control Plane (Master Node)</a></li>
-<li><a href="#_componentes_del_nodo_worker_node">Componentes del Nodo (Worker Node)</a></li>
+<li><a href="#_demo_ver_cómo_openshift_modifica_los_pods">Demo: Ver cómo OpenShift modifica los pods</a></li>
 </ul>
 </li>
-<li><a href="#_1_3_recursos_básicos_del_clúster">1.3 Recursos básicos del clúster</a>
+<li><a href="#_3_source_to_image_s2i">3. Source-to-Image (S2I)</a>
 <ul class="sectlevel2">
-<li><a href="#_pods_ciclo_de_vida_y_estados">Pods: ciclo de vida y estados</a></li>
+<li><a href="#_ver_detalles_del_buildconfig">Ver detalles del BuildConfig</a></li>
 </ul>
 </li>
+<li><a href="#_4_deploymentconfigs_vs_deployments">4. DeploymentConfigs vs Deployments</a>
+<ul class="sectlevel2">
+<li><a href="#_demo_hooks_en_deploymentconfig">Demo: Hooks en DeploymentConfig</a></li>
+</ul>
+</li>
+<li><a href="#_5_routes_vs_ingress">5. Routes vs Ingress</a>
+<ul class="sectlevel2">
+<li><a href="#_ver_router_configuration">Ver Router configuration</a></li>
+</ul>
+</li>
+<li><a href="#_6_imagestreams">6. ImageStreams</a></li>
+<li><a href="#_7_configmaps_y_secrets_con_cifrado">7. ConfigMaps y Secrets (con cifrado)</a></li>
+<li><a href="#_8_buildconfigs_y_pipeline_integrado">8. BuildConfigs y Pipeline Integrado</a></li>
+<li><a href="#_9_operadores_y_operatorhub">9. Operadores y OperatorHub</a></li>
+<li><a href="#_10_monitoreo_integrado">10. Monitoreo Integrado</a></li>
+<li><a href="#_11_logging_agregado">11. Logging Agregado</a></li>
+<li><a href="#_12_red_y_seguridad_de_red">12. Red y Seguridad de Red</a></li>
+<li><a href="#_13_templates_y_quickstarts">13. Templates y QuickStarts</a></li>
+<li><a href="#_14_role_based_access_control_rbac">14. Role-Based Access Control (RBAC)</a></li>
+<li><a href="#_15_consola_web">15. Consola Web</a>
+<ul class="sectlevel2">
+<li><a href="#_navegación_básica_en_consola">Navegación básica en consola</a></li>
+</ul>
+</li>
+<li><a href="#_limpieza">Limpieza</a></li>
+<li><a href="#_resumen_de_diferencias">Resumen de Diferencias</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_contenedores_y_la_plataforma_de_orquestación">Contenedores y la Plataforma de Orquestación</h2>
+<h2 id="_objetivo">Objetivo</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Mostrar las capacidades diferenciadoras de OpenShift respecto a Kubernetes vanilla mediante una serie de comandos prácticos con el cliente <code>oc</code>.</p>
+</div>
 <hr>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_1_1_introducción_a_los_contenedores">1.1 Introducción a los contenedores</h2>
+<h2 id="_prerrequisitos">Prerrequisitos</h2>
 <div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift CLI (<code>oc</code>) instalado</p>
+</li>
+<li>
+<p>Acceso a un clúster OpenShift</p>
+</li>
+<li>
+<p>Usuario con permisos de administrador o desarrollador</p>
+</li>
+</ul>
+</div>
 <div class="sect2">
-<h3 id="_qué_es_un_contenedor">¿Qué es un contenedor?</h3>
+<h3 id="_verificar_conexión">Verificar conexión</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verificar versión del cliente
+oc version
+
+# Verificar conexión al clúster
+oc status
+
+# Verificar usuario actual
+oc whoami</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_1_proyectos_namespaces_con_seguridad_mejorada">1. Proyectos (Namespaces con seguridad mejorada)</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Un contenedor es una unidad ligera, portátil y auto-suficiente que empaqueta una aplicación con todas sus dependencias (bibliotecas, configuraciones, runtime). A diferencia de una máquina virtual, los contenedores <strong>comparten el kernel del host</strong>, lo que los hace mucho más eficientes.</p>
+<p>OpenShift usa "Projects" en lugar de namespaces simples. Los proyectos incluyen:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Seguridad por defecto (SCC)</p>
+</li>
+<li>
+<p>Quotas y límites preconfigurados</p>
+</li>
+<li>
+<p>Aislamiento de red automático</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Listar proyectos
+oc get projects
+
+# Crear un proyecto (crea namespace + seguridad)
+oc new-project demo-walkthrough \
+  --display-name="Demo OpenShift" \
+  --description="Walkthrough de capacidades OpenShift"
+
+# Ver detalles del proyecto
+oc describe project demo-walkthrough
+
+# Ver quotas del proyecto
+oc get quota -n demo-walkthrough
+
+# Ver límites de recursos
+oc get limits -n demo-walkthrough</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p><strong>Diferencias clave: VM vs Contenedor</strong></p>
+<p><strong>Diferencia con Kubernetes</strong>: Los proyectos automáticamente configuran:</p>
 </div>
+<div class="ulist">
+<ul>
+<li>
+<p>Network policies</p>
+</li>
+<li>
+<p>Resource quotas por defecto</p>
+</li>
+<li>
+<p>Security context constraints</p>
+</li>
+<li>
+<p>Límites de recursos predefinidos</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_2_security_context_constraints_scc">2. Security Context Constraints (SCC)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Una de las mayores diferencias: OpenShift no permite pods con root por defecto.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Listar SCCs disponibles
+oc get scc
+
+# Ver SCC por defecto (restricted)
+oc describe scc restricted
+
+# Ver SCC para pods privilegiados
+oc describe scc privileged
+
+# Ver SCC para AnyUID (permite cualquier UID)
+oc describe scc anyuid
+
+# Añadir SCC a un service account
+oc adm policy add-scc-to-user anyuid -z default -n demo-walkthrough
+
+# Ver service accounts
+oc get sa</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes: Pods corren como root por defecto</p>
+</li>
+<li>
+<p>OpenShift: Pods corren con UID aleatorio, sin privilegios</p>
+</li>
+<li>
+<p>SCCs restringen capabilities, SELinux context, volumes permitidos</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_demo_ver_cómo_openshift_modifica_los_pods">Demo: Ver cómo OpenShift modifica los pods</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear un deployment simple
+oc create deployment nginx --image=nginx
+
+# Ver el pod creado
+oc get pods -l app=nginx
+
+# Inspeccionar el pod (nota el UID aleatorio)
+oc get pod -l app=nginx -o yaml | grep -A5 "securityContext"
+
+# Ver el UID asignado
+oc get pod -l app=nginx -o jsonpath='{.items[0].spec.securityContext.runAsUser}'</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_3_source_to_image_s2i">3. Source-to-Image (S2I)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift puede construir imágenes desde código fuente directamente.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Importar una imagen base
+oc import-image openshift/python:3.9 --from=centos/python-39-centos7 --confirm
+
+# Crear una aplicación desde código fuente
+oc new-app python:3.9~https://github.com/sclorg/django-ex.git \
+  --name=django-app
+
+# Ver el build en progreso
+oc logs -f bc/django-app
+
+# Ver builds completados
+oc get builds
+
+# Ver la imagen construida
+oc get is
+
+# Ver el deployment resultante
+oc get dc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes: Necesitas un pipeline CI/CD externo</p>
+</li>
+<li>
+<p>OpenShift: Construye imágenes desde código automáticamente con S2I</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_ver_detalles_del_buildconfig">Ver detalles del BuildConfig</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver el BuildConfig generado
+oc get bc django-app -o yaml
+
+# Ver ImageStreams
+oc get is
+
+# Ver DeploymentConfig
+oc get dc django-app -o yaml</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_4_deploymentconfigs_vs_deployments">4. DeploymentConfigs vs Deployments</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift tiene DeploymentConfigs con capacidades adicionales.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver DeploymentConfigs
+oc get dc
+
+# Ver historial de despliegues
+oc rollout history dc/django-app
+
+# Ver revisiones
+oc rollout history dc/django-app --revision=1
+
+# Deshacer un despliegue
+oc rollout undo dc/django-app
+
+# Configurar triggers automáticos
+oc set triggers dc/django-app --from-image=django-app:latest -c django-app
+
+# Ver estrategias de deployment
+oc get dc django-app -o jsonpath='{.spec.strategy.type}'
+
+# Ver parámetros de rolling update
+oc get dc django-app -o jsonpath='{.spec.strategy.rollingParams}'</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DeploymentConfigs tienen hooks (pre, post, mid)</p>
+</li>
+<li>
+<p>Soporte para triggers automáticos (image change, config change)</p>
+</li>
+<li>
+<p>Rollbacks con historial completo</p>
+</li>
+<li>
+<p>Estrategias: Rolling, Recreate, Custom</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_demo_hooks_en_deploymentconfig">Demo: Hooks en DeploymentConfig</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Añadir hook de pre-deployment
+oc patch dc/django-app -p '{"spec":{"strategy":{"rollingParams":{"pre":{"execNewPod":{"command":["/bin/sh","-c","echo Pre-hook running"],"containerName":"django-app"},"failurePolicy":"Abort"}}}}}'
+
+# Ver la configuración del hook
+oc get dc django-app -o yaml | grep -A10 "pre:"</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_5_routes_vs_ingress">5. Routes vs Ingress</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift usa Routes como equivalente a Ingress con capacidades adicionales.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear una ruta simple
+oc expose svc django-app --hostname=django.apps.example.com
+
+# Ver rutas
+oc get routes
+
+# Ver detalles de la ruta
+oc describe route django-app
+
+# Crear ruta con TLS
+oc create route edge django-app-tls \
+  --service=django-app \
+  --hostname=django-secure.apps.example.com
+
+# Ver certificado generado
+oc get route django-app-tls -o yaml | grep -A10 "tls:"
+
+# Crear ruta con path-based routing
+oc create route edge api-route \
+  --service=api-service \
+  --path=/api \
+  --hostname=apps.example.com</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes Ingress</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Routes generan certificados TLS automáticamente</p>
+</li>
+<li>
+<p>Soporte nativo para edge termination</p>
+</li>
+<li>
+<p>Integración con OpenShift Router (HAProxy)</p>
+</li>
+<li>
+<p>Path rewriting automático</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_ver_router_configuration">Ver Router configuration</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver el router (controller de OpenShift)
+oc get pods -n openshift-ingress
+
+# Ver configuración del router
+oc get ingresscontroller default -n openshift-ingress-operator -o yaml
+
+# Ver métricas del router
+oc get route -n openshift-ingress</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_6_imagestreams">6. ImageStreams</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift gestiona imágenes como recursos nativos.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver ImageStreams
+oc get is
+
+# Ver tags disponibles
+oc describe is nginx
+
+# Importar imagen externa
+oc import-image my-nginx:latest --from=nginx:latest --confirm
+
+# Configurar importación automática
+oc tag --source=docker nginx:latest my-nginx:latest
+
+# Ver historial de tags
+oc describe is my-nginx
+
+# Crear ImageStreamTag manual
+oc tag my-nginx:latest my-nginx:stable
+
+# Ver referencias de imagen
+oc get istag</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Kubernetes: Usa directamente el nombre de imagen del registry</p>
+</li>
+<li>
+<p>OpenShift: Abstrae las imágenes con ImageStreams</p>
+</li>
+<li>
+<p>Permite tags internos, triggers automáticos</p>
+</li>
+<li>
+<p>Historial de imágenes, rollback de imágenes</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_7_configmaps_y_secrets_con_cifrado">7. ConfigMaps y Secrets (con cifrado)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift cifra secrets por defecto.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear un secret
+oc create secret generic db-secret \
+  --from-literal=username=admin \
+  --from-literal=password=secret123
+
+# Ver secrets
+oc get secrets
+
+# Montar secret en un deployment
+oc set volume dc/django-app --add \
+  --secret-name=db-secret \
+  --mount-path=/etc/secrets
+
+# Ver que está cifrado
+oc get secret db-secret -o yaml | grep data:
+
+# Crear secret desde archivo
+oc create secret generic tls-secret \
+  --from-file=tls.crt=/path/to/cert \
+  --from-file=tls.key=/path/to/key
+
+# Ver cifrado en etcd (necesita acceso admin)
+oc get secret db-secret -o json | jq -r '.data.password' | base64 -d</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OpenShift cifra secrets en etcd por defecto</p>
+</li>
+<li>
+<p>Integración con Vault externo</p>
+</li>
+<li>
+<p>Secrets montados como archivos temporales</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_8_buildconfigs_y_pipeline_integrado">8. BuildConfigs y Pipeline Integrado</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift tiene un sistema de builds nativo.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver BuildConfigs
+oc get bc
+
+# Ver builds
+oc get builds
+
+# Iniciar un build manual
+oc start-build django-app
+
+# Ver logs del build
+oc logs build/django-app-1
+
+# Cancelar un build
+oc cancel-build django-app-2
+
+# Configurar webhook para builds automáticos
+oc get bc django-app -o jsonpath='{.spec.triggers}'
+
+# Crear BuildConfig desde Dockerfile
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: custom-build
+spec:
+  source:
+    dockerfile: |
+      FROM centos:7
+      RUN yum install -y httpd
+      CMD ["httpd", "-D", "FOREGROUND"]
+  strategy:
+    type: Docker
+  output:
+    to:
+      kind: ImageStreamTag
+      name: custom-image:latest
+EOF</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Builds integrados en el clúster</p>
+</li>
+<li>
+<p>Múltiples estrategias: Docker, S2I, Pipeline, Custom</p>
+</li>
+<li>
+<p>Webhooks automáticos para CI/CD</p>
+</li>
+<li>
+<p>Historial de builds completo</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_9_operadores_y_operatorhub">9. Operadores y OperatorHub</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift incluye un catálogo de operadores.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver operadores disponibles
+oc get packagemanifests -n openshift-marketplace | head -20
+
+# Buscar un operador
+oc search postgresql
+
+# Ver detalles de un operador
+oc describe packagemanifest postgresql -n openshift-marketplace
+
+# Instalar un operador (ejemplo)
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: postgresql-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  name: postgresql
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+EOF
+
+# Ver operadores instalados
+oc get subscriptions -n openshift-operators
+
+# Ver clusterserviceversions
+oc get csvs -n openshift-operators
+
+# Ver CRDs disponibles
+oc get crd | grep postgresql</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>OperatorHub integrado</p>
+</li>
+<li>
+<p>Instalación con un clic desde la consola</p>
+</li>
+<li>
+<p>Gestión del ciclo de vida automática</p>
+</li>
+<li>
+<p>Actualizaciones automáticas de operadores</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_10_monitoreo_integrado">10. Monitoreo Integrado</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift incluye Prometheus, AlertManager y Grafana.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver el stack de monitoreo
+oc get pods -n openshift-monitoring
+
+# Ver Prometheus
+oc get prometheus -n openshift-monitoring
+
+# Ver AlertManager
+oc get alertmanager -n openshift-monitoring
+
+# Acceder a Prometheus (port-forward)
+oc port-forward -n openshift-monitoring svc/prometheus-operated 9090:9090
+
+# Ver alertas configuradas
+oc get prometheusrules -n openshift-monitoring
+
+# Ver métricas del clúster
+oc adm top nodes
+
+# Ver uso de recursos por pods
+oc adm top pods -n demo-walkthrough
+
+# Ver configuración de monitoreo
+oc get configmap cluster-monitoring-config -n openshift-monitoring</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Stack completo instalado por defecto</p>
+</li>
+<li>
+<p>Métricas de OpenShift específicas</p>
+</li>
+<li>
+<p>Alertas preconfiguradas</p>
+</li>
+<li>
+<p>Grafana dashboards incluidos</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_11_logging_agregado">11. Logging Agregado</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift tiene EFK (Elasticsearch, Fluentd, Kibana) integrado.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver pods de logging
+oc get pods -n openshift-logging
+
+# Ver Elasticsearch
+oc get elasticsearch -n openshift-logging
+
+# Ver Kibana
+oc get kibana -n openshift-logging
+
+# Ver Fluentd (collector)
+oc get daemonset fluentd -n openshift-logging
+
+# Ver logs de un pod específico
+oc logs deployment/django-app
+
+# Ver logs agregados (si está configurado)
+oc logs deployment/django-app --all-namespaces
+
+# Streaming de logs
+oc logs -f deployment/django-app</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_12_red_y_seguridad_de_red">12. Red y Seguridad de Red</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift incluye NetworkPolicies y SDN por defecto.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver configuración de red
+oc get network.config.openshift.io cluster -o yaml
+
+# Ver plugin de red
+oc get network.config.openshift.io cluster -o jsonpath='{.spec.networkType}'
+
+# Ver NetworkPolicies
+oc get networkpolicy
+
+# Crear NetworkPolicy
+cat &lt;&lt;EOF | oc apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-ingress
+spec:
+  podSelector: {}
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress
+EOF
+
+# Ver proyectos aislados
+oc get netnamespace
+
+# Ver configuración de Egress
+oc get egressnetworkpolicy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>SDN configurado por defecto</p>
+</li>
+<li>
+<p>Proyectos aislados automáticamente</p>
+</li>
+<li>
+<p>Egress network policies (solo OpenShift)</p>
+</li>
+<li>
+<p>Multitenant isolation</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_13_templates_y_quickstarts">13. Templates y QuickStarts</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift permite crear aplicaciones desde templates.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Listar templates disponibles
+oc get templates -n openshift
+
+# Ver un template específico
+oc describe template postgresql-ephemeral -n openshift
+
+# Procesar un template (sin crear)
+oc process openshift//postgresql-ephemeral \
+  -p POSTGRESQL_USER=myuser \
+  -p POSTGRESQL_PASSWORD=mypassword \
+  -p POSTGRESQL_DATABASE=mydb \
+  --dry-run -o yaml
+
+# Crear desde template
+oc new-app --template=postgresql-ephemeral \
+  -p POSTGRESQL_USER=myuser \
+  -p POSTGRESQL_PASSWORD=mypassword \
+  -p POSTGRESQL_DATABASE=mydb
+
+# Crear template personalizado
+oc create -f - &lt;&lt;EOF
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: my-template
+objects:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: ${NAME}
+  spec:
+    replicas: ${REPLICAS}
+    template:
+      metadata:
+        labels:
+          app: ${NAME}
+      spec:
+        containers:
+        - name: ${NAME}
+          image: ${IMAGE}
+parameters:
+- name: NAME
+  value: myapp
+- name: REPLICAS
+  value: "1"
+- name: IMAGE
+  value: nginx:latest
+EOF
+
+# Usar el template
+oc process my-template -p NAME=webapp -p REPLICAS=3 | oc apply -f -</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_14_role_based_access_control_rbac">14. Role-Based Access Control (RBAC)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>OpenShift extiende RBAC con roles específicos.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver roles del clúster
+oc get clusterroles | head -20
+
+# Ver roles del proyecto
+oc get roles
+
+# Ver role bindings
+oc get rolebindings
+
+# Añadir rol a usuario
+oc adm policy add-role-to-user admin usuario1 -n demo-walkthrough
+
+# Añadir rol a grupo
+oc adm policy add-role-to-group view developers -n demo-walkthrough
+
+# Ver quién puede hacer qué
+oc auth can-i --list
+
+# Ver permisos de un usuario
+oc auth can-i get pods --as=usuario1
+
+# Ver grupos
+oc get groups
+
+# Crear grupo
+oc adm groups new developers usuario1 usuario2</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Diferencia con Kubernetes</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Roles específicos de OpenShift: admin, edit, view</p>
+</li>
+<li>
+<p>Integración con LDAP/OAuth</p>
+</li>
+<li>
+<p>Grupos de usuarios nativos</p>
+</li>
+<li>
+<p>Project access control</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_15_consola_web">15. Consola Web</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>La consola de OpenShift ofrece más funcionalidades.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Obtener URL de la consola
+oc whoami --show-console
+
+# Obtener URL de la API
+oc whoami --show-server
+
+# Obtener token de acceso
+oc whoami -t
+
+# Login con token
+oc login --token=&lt;token&gt; --server=&lt;server&gt;
+
+# Ver info del usuario actual
+oc whoami
+oc get user $(oc whoami) -o yaml</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_navegación_básica_en_consola">Navegación básica en consola</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Home &gt; Overview: Vista general del proyecto</p>
+</li>
+<li>
+<p>Builds: Ver y gestionar builds</p>
+</li>
+<li>
+<p>Deployments: Ver DeploymentConfigs y Deployments</p>
+</li>
+<li>
+<p>Services: Ver servicios y rutas</p>
+</li>
+<li>
+<p>Monitoring: Ver métricas y alertas</p>
+</li>
+</ul>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limpieza">Limpieza</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Eliminar el proyecto de demo
+oc delete project demo-walkthrough
+
+# Eliminar operadores instalados
+oc delete subscription postgresql-operator -n openshift-operators
+
+# Eliminar CRDs
+oc delete crd postgresqls.postgresql.k8s.io</code></pre>
+</div>
+</div>
+<hr>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_resumen_de_diferencias">Resumen de Diferencias</h2>
+<div class="sectionbody">
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 33.3333%;">
@@ -492,809 +1436,79 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Característica</th>
-<th class="tableblock halign-left valign-top">Máquina Virtual</th>
-<th class="tableblock halign-left valign-top">Contenedor</th>
+<th class="tableblock halign-left valign-top">Kubernetes</th>
+<th class="tableblock halign-left valign-top">OpenShift</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Aislamiento</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Hardware completo (hypervisor)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A nivel de proceso (kernel)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Seguridad por defecto</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pods como root</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Random UIDs, SCCs</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tiempo de arranque</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Minutos</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Milisegundos/segundos</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Builds</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Externo (CI/CD)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integrado (S2I, BuildConfig)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tamaño</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">GB (SO completo)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MB (solo app + deps)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployments</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment + DeploymentConfig</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Densidad</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pocas por host</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Cientos por host</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ingress</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ingress Controller</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Routes (con TLS automático)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Portabilidad</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Limitada</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Alta (OCI standard)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Imágenes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Directas del registry</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ImageStreams abstractos</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Helm Charts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates nativos + Helm</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operadores</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Manual</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OperatorHub integrado</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Monitoreo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instalar manual</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stack completo incluido</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Logging</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Instalar manual</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EFK incluido</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Red</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Plugin CNI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SDN por defecto + Egress</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RBAC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Básico</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Roles extendidos + grupos</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consola</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dashboard básico</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consola completa</p></td>
 </tr>
 </tbody>
 </table>
-<div class="paragraph">
-<p><strong>¿Por qué importa?</strong> Como desarrollador, imagina que tu app funciona en tu laptop pero falla en producción. Los contenedores resuelven el clásico "en mi máquina funciona" porque empaquetan TODO lo necesario.</p>
-</div>
-<hr>
-</div>
-<div class="sect2">
-<h3 id="_namespaces_y_cgroups_la_magia_del_kernel_linux">Namespaces y cgroups: la magia del kernel Linux</h3>
-<div class="paragraph">
-<p>Los contenedores no son magia, son características del kernel Linux combinadas:</p>
-</div>
-<div class="paragraph">
-<p><strong>Namespaces (aislamiento):</strong>
-Cada contenedor ve su propia vista del sistema:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>pid</code> - Propio árbol de procesos (PID 1 es el proceso principal del contenedor)</p>
-</li>
-<li>
-<p><code>net</code> - Propia pila de red (interfaces, puertos, routing)</p>
-</li>
-<li>
-<p><code>mnt</code> - Propio sistema de archivos</p>
-</li>
-<li>
-<p><code>uts</code> - Propio hostname</p>
-</li>
-<li>
-<p><code>ipc</code> - Propios recursos IPC (semáforos, memoria compartida)</p>
-</li>
-<li>
-<p><code>user</code> - Propios usuarios/grupos (UID 0 dentro ≠ UID 0 fuera)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>cgroups (limitación de recursos):</strong>
-Controlan cuánto puede usar cada contenedor:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>CPU (shares, cores, quota)</p>
-</li>
-<li>
-<p>Memoria (límites hard/soft)</p>
-</li>
-<li>
-<p>I/O de disco</p>
-</li>
-<li>
-<p>Red (bandwidth)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo práctico - Ver namespaces de un proceso:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ejecuta un contenedor simple
-podman run -d --name demo-ns alpine sleep 3600
-
-# Encuentra el PID del proceso principal
-PID=$(podman inspect demo-ns --format '{{.State.Pid}}')
-echo "PID del contenedor: $PID"
-
-# Mira sus namespaces
-ls -la /proc/$PID/ns/
-# Verás que cada namespace es un enlace simbólico diferente
-
-# Compara con tu shell actual
-ls -la /proc/self/ns/
-
-# ¡Son diferentes! Ese es el aislamiento</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Límites con cgroups:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Contenedor con límites de memoria y CPU
-podman run -d --name limited \
-  --memory 256m \
-  --cpus 0.5 \
-  alpine sleep 3600
-
-# Verifica los límites aplicados
-cat /sys/fs/cgroup/memory.slice/memory.limit_in_bytes 2&gt;/dev/null || \
-  cat /sys/fs/cgroup/memory.max 2&gt;/dev/null
-
-# Intenta usar más memoria de la permitida (fallará)
-podman exec limited sh -c "dd if=/dev/zero bs=1M count=300 | md5sum"
-# El OOM killer terminará el proceso</code></pre>
-</div>
-</div>
-<hr>
-</div>
-<div class="sect2">
-<h3 id="_imágenes_oci_capas_registros_y_etiquetas">Imágenes OCI: capas, registros y etiquetas</h3>
-<div class="paragraph">
-<p><strong>¿Qué es una imagen OCI?</strong>
-Es un template de solo lectura para crear contenedores. Sigue el estándar Open Container Initiative (OCI), garantizando portabilidad entre runtimes (Podman, Docker, containerd, CRI-O).</p>
-</div>
-<div class="paragraph">
-<p><strong>Sistema de capas (Union Filesystem):</strong>
-Las imágenes son capas apiladas de solo lectura:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">┌─────────────────────────┐ ← Capa writable (contenedor)
-├─────────────────────────┤ ← Capa 4: configuración app
-├─────────────────────────┤ ← Capa 3: dependencias npm
-├─────────────────────────┤ ← Capa 2: Node.js runtime
-├─────────────────────────┤ ← Capa 1: Sistema base (Ubuntu/Alpine)
-└─────────────────────────┘</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Ventajas:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Capas compartidas entre imágenes → ahorro de espacio</p>
-</li>
-<li>
-<p>Builds más rápidos (solo cambian capas superiores)</p>
-</li>
-<li>
-<p>Downloads incrementales</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Inspeccionar capas:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Descarga una imagen
-podman pull node:18-alpine
-
-# Mira sus capas
-podman inspect node:18-alpine --format '{{json .RootFS.Layers}}' | jq
-
-# Historial de la imagen (qué añadió cada capa)
-podman history node:18-alpine
-
-# Compara tamaños de imágenes base
-podman pull alpine:3.18
-podman pull ubuntu:22.04
-podman images | grep -E "alpine|ubuntu"
-# Alpine ~5MB vs Ubuntu ~77MB</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Registros de imágenes:</strong>
-Donde se almacenan las imágenes:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Docker Hub (hub.docker.com) - público por defecto</p>
-</li>
-<li>
-<p>Quay.io - de Red Hat, ideal para OpenShift</p>
-</li>
-<li>
-<p>GitHub Container Registry (ghcr.io)</p>
-</li>
-<li>
-<p>Registros privados (OpenShift tiene el suyo integrado)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Etiquetas (tags):</strong>
-Versionado de imágenes:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>node:18</code> - tag específico</p>
-</li>
-<li>
-<p><code>node:18-alpine</code> - tag con variante</p>
-</li>
-<li>
-<p><code>node:latest</code> - tag mutable (¡evítalo en producción!)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Trabajo con registros:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Login en un registro
-podman login quay.io
-
-# Etiquetar imagen para push
-podman tag node:18-alpine quay.io/mi-usuario/mi-app:v1.0
-
-# Subir imagen
-podman push quay.io/mi-usuario/mi-app:v1.0
-
-# Ver digest (hash único, inmutable)
-podman inspect quay.io/mi-usuario/mi-app:v1.0 --format '{{.Digest}}'
-# sha256:abc123... ← Útil para pines de seguridad</code></pre>
-</div>
-</div>
-<hr>
-</div>
-<div class="sect2">
-<h3 id="_gestión_de_contenedores_con_podman">Gestión de contenedores con Podman</h3>
-<div class="paragraph">
-<p>Podman (Pod Manager) es el runtime de contenedores preferido en el ecosistema Red Hat/OpenShift. Es daemonless y rootless por diseño.</p>
-</div>
-<div class="paragraph">
-<p><strong>Comandos esenciales:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># === CICLO DE VIDA ===
-
-# Ejecutar contenedor interactivo
-podman run -it alpine sh
-
-# Ejecutar en background (detached)
-podman run -d --name web -p 8080:80 nginx:alpine
-
-# Listar contenedores activos
-podman ps
-
-# Listar todos (incluidos parados)
-podman ps -a
-
-# Detener contenedor
-podman stop web
-
-# Iniciar contenedor existente
-podman start web
-
-# Reiniciar
-podman restart web
-
-# Eliminar contenedor (debe estar parado)
-podman rm web
-
-# Forzar eliminación
-podman rm -f web
-
-# === EJECUCIÓN EN CONTENEDORES ===
-
-# Ejecutar comando en contenedor activo
-podman exec -it web sh
-
-# Copiar archivos
-podman cp ./archivo.txt web:/tmp/
-
-# Ver logs
-podman logs web
-podman logs -f web  # follow (streaming)
-
-# === IMÁGENES ===
-
-# Listar imágenes locales
-podman images
-
-# Eliminar imagen
-podman rmi nginx:alpine
-
-# Eliminar imágenes no usadas
-podman image prune
-
-# Construir imagen desde Dockerfile
-podman build -t mi-app:v1.0 .
-
-# === INSPECCIÓN ===
-
-# Detalles del contenedor
-podman inspect web
-
-# Uso de recursos en tiempo real
-podman stats
-
-# Procesos dentro del contenedor
-podman top web</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo completo - Aplicación web simple:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># 1. Crear Dockerfile
-mkdir demo-web &amp;&amp; cd demo-web
-cat &gt; Dockerfile &lt;&lt; 'EOF'
-FROM python:3.11-alpine
-WORKDIR /app
-COPY server.py .
-EXPOSE 8000
-CMD ["python", "server.py"]
-EOF
-
-# 2. Crear aplicación
-cat &gt; server.py &lt;&lt; 'EOF'
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-import os
-
-class Handler(SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        hostname = os.uname().nodename
-        self.wfile.write(f"¡Hola desde {hostname}!\n".encode())
-
-if __name__ == '__main__':
-    server = HTTPServer(('0.0.0.0', 8000), Handler)
-    print("Servidor iniciado en puerto 8000")
-    server.serve_forever()
-EOF
-
-# 3. Construir imagen
-podman build -t demo-web:v1.0 .
-
-# 4. Ejecutar
-podman run -d --name web-demo -p 8000:8000 demo-web:v1.0
-
-# 5. Probar
-curl http://localhost:8000
-
-# 6. Ver logs
-podman logs web-demo
-
-# 7. Limpiar
-podman rm -f web-demo</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Podman vs Docker:</strong></p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 33.3333%;">
-<col style="width: 33.3334%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Aspecto</th>
-<th class="tableblock halign-left valign-top">Docker</th>
-<th class="tableblock halign-left valign-top">Podman</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Arquitectura</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Daemon (dockerd)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Daemonless</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Permisos</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Requiere root o rootless setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rootless nativo</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pods</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No (solo contenedores)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Sí (compatibilidad Kubernetes)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Systemd</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Integración manual</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Integración nativa (<code>podman generate systemd</code>)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Seguridad</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Contexto SELinux opcional</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SELinux por defecto</p></td>
-</tr>
-</tbody>
-</table>
-<hr>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_1_2_arquitectura_del_clúster_openshift">1.2 Arquitectura del clúster OpenShift</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>OpenShift es una plataforma de contenedores empresarial basada en Kubernetes. Añade capacidades de PaaS, seguridad reforzada y herramientas para desarrolladores.</p>
-</div>
-<div class="sect2">
-<h3 id="_componentes_del_control_plane_master_node">Componentes del Control Plane (Master Node)</h3>
-<div class="paragraph">
-<p>El cerebro del clúster:</p>
-</div>
-<div class="paragraph">
-<p><strong>API Server (<code>openshift-apiserver</code>)</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Punto de entrada único para todas las llamadas REST</p>
-</li>
-<li>
-<p>Autentica y autoriza requests</p>
-</li>
-<li>
-<p>Valida objetos y escribe en etcd</p>
-</li>
-<li>
-<p>Puerto: 6443 (HTTPS)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>etcd</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Base de datos clave-valor distribuida</p>
-</li>
-<li>
-<p>Almacena TODO el estado del clúster</p>
-</li>
-<li>
-<p>Requiere backups regulares</p>
-</li>
-<li>
-<p>Puerto: 2379</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Scheduler (<code>openshift-kube-scheduler</code>)</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Decide dónde colocar nuevos Pods</p>
-</li>
-<li>
-<p>Considera: recursos, afinidades, taints, policies</p>
-</li>
-<li>
-<p>No reasigna Pods existentes</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Controller Manager (<code>openshift-kube-controller-manager</code>)</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Ejecuta bucles de control (control loops)</p>
-</li>
-<li>
-<p>Mantiene el estado deseado</p>
-</li>
-<li>
-<p>Ejemplos: Node Controller, Replication Controller, Service Account Controller</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>OpenShift Controllers adicionales:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>openshift-controller-manager</code> - Controllers específicos de OpenShift</p>
-</li>
-<li>
-<p><code>openshift-route-controller</code> - Gestión de Routes</p>
-</li>
-<li>
-<p><code>openshift-image-registry</code> - Registro interno de imágenes</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Flujo de creación de un Pod:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">Usuario (oc apply)
-    → API Server (autenticación, validación, escritura en etcd)
-    → Scheduler (detecta Pod sin nodo, calcula mejor nodo)
-    → API Server (actualiza Pod con nodo asignado)
-    → Kubelet en nodo asignado (detecta nuevo Pod, crea contenedores via CRI)
-    → Pod ejecutándose</code></pre>
-</div>
-</div>
-<hr>
-</div>
-<div class="sect2">
-<h3 id="_componentes_del_nodo_worker_node">Componentes del Nodo (Worker Node)</h3>
-<div class="paragraph">
-<p><strong>kubelet</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Agente que corre en cada nodo</p>
-</li>
-<li>
-<p>Se comunica con API Server</p>
-</li>
-<li>
-<p>Gestiona ciclo de vida de Pods (crea, arranca, monitoriza, destruye)</p>
-</li>
-<li>
-<p>Reporta estado del nodo</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>kube-proxy</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Mantiene reglas de red (iptables/nftables o IPVS)</p>
-</li>
-<li>
-<p>Implementa abstracción Service</p>
-</li>
-<li>
-<p>Balancea tráfico a Pods backend</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>CRI (Container Runtime Interface)</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>OpenShift usa <strong>CRI-O</strong> (no Docker, no containerd)</p>
-</li>
-<li>
-<p>Ligero, diseñado para Kubernetes</p>
-</li>
-<li>
-<p>Compatible OCI</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Otros componentes en el nodo:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>OVN-Kubernetes</strong> - CNI plugin para networking</p>
-</li>
-<li>
-<p><strong>Machine Config Daemon</strong> - Aplica configuraciones del nodo</p>
-</li>
-<li>
-<p><strong>Prometheus Node Exporter</strong> - Métricas</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Ver componentes en un clúster OpenShift:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Si tienes acceso a un clúster OpenShift:
-
-# Login como admin
-oc login -u kubeadmin -p &lt;password&gt; https://api.cluster.example.com:6443
-
-# Ver nodos
-oc get nodes
-oc get nodes -o wide  # con más info
-
-# Ver pods del control plane (corren en master nodes)
-oc get pods -n openshift-kube-apiserver
-oc get pods -n openshift-etcd
-oc get pods -n openshift-kube-scheduler
-oc get pods -n openshift-kube-controller-manager
-
-# Ver pods de sistema en un nodo worker
-oc get pods -n openshift-ovn-kubernetes -o wide
-oc get pods -n openshift-machine-config-operator
-
-# Inspeccionar un nodo
-oc describe node &lt;nombre-nodo&gt;
-
-# Ver versiones de componentes
-oc get clusterversion
-oc describe clusterversion</code></pre>
-</div>
-</div>
-<hr>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_1_3_recursos_básicos_del_clúster">1.3 Recursos básicos del clúster</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_pods_ciclo_de_vida_y_estados">Pods: ciclo de vida y estados</h3>
-<div class="paragraph">
-<p>Un Pod es la unidad mínima desplegable en Kubernetes/OpenShift. Puede contener uno o más contenedores que comparten:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Dirección IP</p>
-</li>
-<li>
-<p>Volúmenes</p>
-</li>
-<li>
-<p>Espacio de nombres de red (localhost entre contenedores del mismo Pod)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Estados del Pod:</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>Pending</code> - Aceptado pero no iniciado (esperando recursos)</p>
-</li>
-<li>
-<p><code>Running</code> - Al menos un contenedor ejecutándose</p>
-</li>
-<li>
-<p><code>Succeeded</code> - Todos los contenedores terminaron con éxito</p>
-</li>
-<li>
-<p><code>Failed</code> - Al menos un contenedor terminó con error</p>
-</li>
-<li>
-<p><code>Unknown</code> - Estado no determinado (problema de comunicación)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ciclo de vida detallado:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">Creation → Pending → Running → [Succeeded | Failed]
-                    ↓
-              CrashLoopBackOff (restart policy + fallos repetidos)</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Conditions (condiciones del Pod):</strong></p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>PodScheduled</code> - Asignado a un nodo</p>
-</li>
-<li>
-<p><code>Ready</code> - Listo para recibir tráfico</p>
-</li>
-<li>
-<p><code>Initialized</code> - Init containers completados</p>
-</li>
-<li>
-<p><code>ContainersReady</code> - Todos los contenedores listos</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Pod simple:</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># pod-simple.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: mi-pod
-  labels:
-    app: demo
-spec:
-  containers:
-  - name: web
-    image: nginx:alpine
-    ports:
-    - containerPort: 80
-    resources:
-      requests:
-        memory: "64Mi"
-        cpu: "50m"
-      limits:
-        memory: "128Mi"
-        cpu: "100m"</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear el Pod
-oc apply -f pod-simple.yaml
-
-# Ver estado
-oc get pods mi-pod
-oc get pod mi-pod -o wide
-
-# Ver detalles y eventos
-oc describe pod mi-pod
-
-# Ver logs
-oc logs mi-pod
-
-# Ejecutar comando dentro del Pod
-oc exec mi-pod -- curl localhost
-
-# Ver YAML del Pod en el clúster
-oc get pod mi-pod -o yaml
-
-# Eliminar
-oc delete pod mi-pod</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Ejemplo - Pod con múltiples contenedores (sidecar):</strong></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># pod-multi.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: multi-container
-spec:
-  containers:
-  - name: app
-    image: nginx:alpine
-    volumeMounts:
-    - name: shared-logs
-      mountPath: /var/log/nginx
-  - name: sidecar
-    image: busybox
-    command: ["sh", "-c", "tail -f /logs/access.log"]
-    volumeMounts:
-    - name: shared-logs
-      mountPath: /logs
-  volumes:
-  - name: shared-logs
-    emptyDir: {}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc apply -f pod-multi.yaml</code></pre>
-</div>
-</div>
-</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-20 08:26:44 +0200
+Last updated 2026-05-20 08:26:06 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>

@@ -5,7 +5,6 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<meta name="author" content="== Orquestación Avanzada en OpenShift">
 <title>OpenShift Container Platform - Día 2</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -434,16 +433,53 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>OpenShift Container Platform - Día 2</h1>
-<div class="details">
-<span id="author" class="author">== Orquestación Avanzada en OpenShift</span><br>
+<div id="toc" class="toc2">
+<div id="toctitle">Contenidos</div>
+<ul class="sectlevel1">
+<li><a href="#_orquestación_avanzada_en_openshift">Orquestación Avanzada en OpenShift</a></li>
+<li><a href="#_2_1_networking">2.1 Networking</a>
+<ul class="sectlevel2">
+<li><a href="#_modelo_de_red_de_pods_ovn_kubernetes_en_openshift">Modelo de red de pods: OVN-Kubernetes en OpenShift</a></li>
+<li><a href="#_dns_interno_del_clúster">DNS interno del clúster</a></li>
+<li><a href="#_routes_e_ingress_en_openshift">Routes e Ingress en OpenShift</a></li>
+<li><a href="#_networkpolicies">NetworkPolicies</a></li>
+</ul>
+</li>
+<li><a href="#_2_2_cargas_de_trabajo_avanzadas">2.2 Cargas de trabajo avanzadas</a>
+<ul class="sectlevel2">
+<li><a href="#_statefulsets">StatefulSets</a></li>
+<li><a href="#_daemonsets">DaemonSets</a></li>
+<li><a href="#_jobs_y_cronjobs">Jobs y CronJobs</a></li>
+<li><a href="#_horizontal_pod_autoscaler_hpa">Horizontal Pod Autoscaler (HPA)</a></li>
+</ul>
+</li>
+<li><a href="#_2_3_seguridad_en_el_clúster">2.3 Seguridad en el clúster</a>
+<ul class="sectlevel2">
+<li><a href="#_rbac_roles_clusterroles_y_rolebindings">RBAC: Roles, ClusterRoles y RoleBindings</a></li>
+<li><a href="#_serviceaccounts">ServiceAccounts</a></li>
+<li><a href="#_pod_security_admission_psa">Pod Security Admission (PSA)</a></li>
+<li><a href="#_gestión_de_secretos_buenas_prácticas">Gestión de secretos: buenas prácticas</a></li>
+</ul>
+</li>
+<li><a href="#_2_4_gestión_de_recursos">2.4 Gestión de recursos</a>
+<ul class="sectlevel2">
+<li><a href="#_requests_y_limits_de_cpu_y_memoria">Requests y Limits de CPU y memoria</a></li>
+<li><a href="#_limitrange_y_resourcequota">LimitRange y ResourceQuota</a></li>
+<li><a href="#_quality_of_service_guaranteed_burstable_besteffort">Quality of Service: Guaranteed, Burstable, BestEffort</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 <div id="content">
-<div id="preamble">
+<div class="sect1">
+<h2 id="_orquestación_avanzada_en_openshift">Orquestación Avanzada en OpenShift</h2>
 <div class="sectionbody">
 <hr>
 </div>
@@ -502,7 +538,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>┌─────────────────────────────────────────────────────┐
+<pre class="highlightjs highlight"><code class="language-none hljs">┌─────────────────────────────────────────────────────┐
 │                   Master Nodes                       │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
 │  │ ovnkube-    │  │ ovnkube-    │  │ ovnkube-    │ │
@@ -535,7 +571,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver configuración de red del clúster
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver configuración de red del clúster
 oc get network.config/cluster -o yaml
 
 # Ver pods de red
@@ -609,7 +645,7 @@ oc get ipaddresspools -A</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># dns-test.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># dns-test.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -623,7 +659,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear pod de prueba
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear pod de prueba
 oc apply -f dns-test.yaml
 
 # Probar resolución DNS
@@ -654,7 +690,7 @@ exit</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># custom-dns.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># custom-dns.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -730,7 +766,7 @@ data:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># route-edge.yaml - Route con TLS Edge
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># route-edge.yaml - Route con TLS Edge
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -747,7 +783,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># route-passthrough.yaml - Route con TLS Passthrough
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># route-passthrough.yaml - Route con TLS Passthrough
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -763,7 +799,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># route-reencrypt.yaml - Route con TLS Re-encrypt
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># route-reencrypt.yaml - Route con TLS Re-encrypt
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -790,7 +826,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear Route simple
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear Route simple
 oc expose service webapp
 
 # Crear Route con hostname personalizado
@@ -815,7 +851,7 @@ curl -k https://webapp.apps.cluster.example.com</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: route.openshift.io/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: multi-path
@@ -887,7 +923,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># deny-all-ingress.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># deny-all-ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -904,7 +940,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># allow-from-namespace.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># allow-from-namespace.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -930,7 +966,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># allow-labeled-pods.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># allow-labeled-pods.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -956,7 +992,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># restrict-egress.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># restrict-egress.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -982,7 +1018,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear NetworkPolicy
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear NetworkPolicy
 oc apply -f deny-all-ingress.yaml
 
 # Ver NetworkPolicies
@@ -1071,7 +1107,7 @@ oc delete networkpolicy deny-all-ingress</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># statefulset-postgres.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># statefulset-postgres.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -1124,7 +1160,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear StatefulSet
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear StatefulSet
 oc apply -f statefulset-postgres.yaml
 
 # Ver StatefulSet y Pods
@@ -1177,7 +1213,7 @@ oc scale statefulset postgres --replicas=2
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># daemonset.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -1212,7 +1248,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear DaemonSet
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear DaemonSet
 oc apply -f daemonset.yaml
 
 # Ver DaemonSet
@@ -1255,7 +1291,7 @@ oc rollout status daemonset/log-collector</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># job.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1289,7 +1325,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># parallel-job.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># parallel-job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1314,7 +1350,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># cronjob.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># cronjob.yaml
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1336,7 +1372,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear Job
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear Job
 oc apply -f job.yaml
 
 # Ver Jobs
@@ -1390,7 +1426,7 @@ oc delete cronjob daily-backup</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># hpa.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># hpa.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -1432,7 +1468,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Verificar metrics server
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verificar metrics server
 oc get pods -n openshift-monitoring | grep metrics
 
 # Crear HPA
@@ -1489,7 +1525,7 @@ oc describe hpa webapp-hpa | grep -A10 Events</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># role.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -1509,7 +1545,7 @@ rules:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># rolebinding.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -1533,7 +1569,7 @@ roleRef:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># clusterrole-view.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># clusterrole-view.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1568,7 +1604,7 @@ rules:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver roles en namespace
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver roles en namespace
 oc get roles
 
 # Ver ClusterRoles
@@ -1606,7 +1642,7 @@ Cada namespace tiene <code>default</code> SA, usada por Pods sin SA especificado
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># serviceaccount.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -1641,7 +1677,7 @@ roleRef:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: api-pod
@@ -1654,7 +1690,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear ServiceAccount
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear ServiceAccount
 oc create serviceaccount build-bot
 
 # Ver ServiceAccounts
@@ -1717,7 +1753,7 @@ oc create token build-bot --duration=24h</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># namespace-psa.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># namespace-psa.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -1733,7 +1769,7 @@ metadata:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: secure-pod
@@ -1763,7 +1799,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Verificar PSA en namespace
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verificar PSA en namespace
 oc get namespace secure-apps -o yaml | grep pod-security
 
 # Probar Pod que viola PSA
@@ -1801,7 +1837,7 @@ oc auth can-i create pods --as=system:anonymous -n secure-apps</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Mal: commit del secret
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Mal: commit del secret
 git add secret.yaml  # NO
 
 # Bien: usar SealedSecrets, External Secrets Operator, o inyección en CI/CD</code></pre>
@@ -1812,7 +1848,7 @@ git add secret.yaml  # NO
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Verificar cifrado activo
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Verificar cifrado activo
 oc get encryptionconfig -o yaml</code></pre>
 </div>
 </div>
@@ -1821,7 +1857,7 @@ oc get encryptionconfig -o yaml</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Solo ServiceAccounts necesarios pueden leer secrets
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Solo ServiceAccounts necesarios pueden leer secrets
 oc auth can-i get secrets --as=system:serviceaccount:mi-proyecto:default</code></pre>
 </div>
 </div>
@@ -1849,7 +1885,7 @@ oc auth can-i get secrets --as=system:serviceaccount:mi-proyecto:default</code><
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># ExternalSecret apunta a Vault
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># ExternalSecret apunta a Vault
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
@@ -1875,7 +1911,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># Job que rota secret periódicamente
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Job que rota secret periódicamente
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1913,7 +1949,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: resource-demo
@@ -1958,7 +1994,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver recursos de Pods
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver recursos de Pods
 oc get pods -o custom-columns=NAME:.metadata.name,\
 CPU_REQ:.spec.containers[*].resources.requests.cpu,\
 MEM_REQ:.spec.containers[*].resources.requests.memory,\
@@ -1984,7 +2020,7 @@ oc run stress --rm -it --image=progrium/stress -- \
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># limitrange.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># limitrange.yaml
 apiVersion: v1
 kind: LimitRange
 metadata:
@@ -2018,7 +2054,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># resourcequota.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># resourcequota.yaml
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -2036,7 +2072,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Aplicar LimitRange y ResourceQuota
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Aplicar LimitRange y ResourceQuota
 oc apply -f limitrange.yaml
 oc apply -f resourcequota.yaml
 
@@ -2122,7 +2158,7 @@ oc run too-many-pods --image=nginx --replicas=15
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># guaranteed.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># guaranteed.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -2172,7 +2208,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver QoS de un Pod
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver QoS de un Pod
 oc get pod &lt;pod-name&gt; -o jsonpath='{.status.qosClass}'
 
 # Ver todos con su QoS
@@ -2187,8 +2223,15 @@ oc get pods -o custom-columns=NAME:.metadata.name,QOS:.status.qosClass
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-19 08:22:43 +0200
+Last updated 2026-05-20 08:26:37 +0200
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
 </body>
 </html>

@@ -5,7 +5,6 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.26">
-<meta name="author" content="== OpenShift: Plataforma Avanzada">
 <title>OpenShift Container Platform - Día 4</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -434,16 +433,51 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>OpenShift Container Platform - Día 4</h1>
-<div class="details">
-<span id="author" class="author">== OpenShift: Plataforma Avanzada</span><br>
+<div id="toc" class="toc2">
+<div id="toctitle">Contenidos</div>
+<ul class="sectlevel1">
+<li><a href="#_openshift_plataforma_avanzada">OpenShift: Plataforma Avanzada</a></li>
+<li><a href="#_4_1_scheduling_avanzado">4.1 Scheduling avanzado</a>
+<ul class="sectlevel2">
+<li><a href="#_node_selectors_taints_y_tolerations">Node selectors, taints y tolerations</a></li>
+<li><a href="#_pod_affinity_y_anti_affinity">Pod Affinity y Anti-Affinity</a></li>
+<li><a href="#_priority_classes">Priority Classes</a></li>
+</ul>
+</li>
+<li><a href="#_4_2_helm_en_openshift">4.2 Helm en OpenShift</a>
+<ul class="sectlevel2">
+<li><a href="#_estructura_de_un_chart">Estructura de un chart</a></li>
+<li><a href="#_instalación_actualización_y_rollback_de_releases">Instalación, actualización y rollback de releases</a></li>
+<li><a href="#_repositorios_de_charts_y_customización_con_values_yaml">Repositorios de charts y customización con values.yaml</a></li>
+</ul>
+</li>
+<li><a href="#_4_3_operators_y_ciclo_de_vida_de_la_plataforma">4.3 Operators y ciclo de vida de la plataforma</a>
+<ul class="sectlevel2">
+<li><a href="#_qué_es_un_operator_y_el_patrón_de_reconciliación">Qué es un Operator y el patrón de reconciliación</a></li>
+<li><a href="#_operatorhub_y_operator_lifecycle_manager_olm">OperatorHub y Operator Lifecycle Manager (OLM)</a></li>
+<li><a href="#_operators_de_plataforma_pipelines_gitops_logging_service_mesh">Operators de plataforma: Pipelines, GitOps, Logging, Service Mesh</a></li>
+<li><a href="#_cluster_version_operator_cvo_y_actualizaciones_del_clúster">Cluster Version Operator (CVO) y actualizaciones del clúster</a></li>
+<li><a href="#_machine_config_operator_mco_y_machineconfigpools">Machine Config Operator (MCO) y MachineConfigPools</a></li>
+</ul>
+</li>
+<li><a href="#_4_4_cicd_y_gitops">4.4 CI/CD y GitOps</a>
+<ul class="sectlevel2">
+<li><a href="#_openshift_pipelines_tekton_tasks_pipelines_triggers">OpenShift Pipelines (Tekton): Tasks, Pipelines, Triggers</a></li>
+<li><a href="#_openshift_gitops_argocd_applications_sincronización_entornos">OpenShift GitOps (ArgoCD): Applications, sincronización, entornos</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 <div id="content">
-<div id="preamble">
+<div class="sect1">
+<h2 id="_openshift_plataforma_avanzada">OpenShift: Plataforma Avanzada</h2>
 <div class="sectionbody">
 <hr>
 </div>
@@ -458,7 +492,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: gpu-pod
@@ -472,7 +506,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Etiquetar nodos
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Etiquetar nodos
 oc label node worker-0 hardware=gpu
 oc label node worker-1 hardware=cpu
 oc label node worker-2 environment=production
@@ -500,7 +534,7 @@ oc label node worker-0 hardware-</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Aplicar taint
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Aplicar taint
 oc adm taint nodes worker-0 hardware=gpu:NoSchedule
 oc adm taint nodes worker-1 dedicated=infra:NoExecute
 oc adm taint nodes worker-2 special=true:PreferNoSchedule
@@ -517,7 +551,7 @@ oc adm taint nodes worker-0 hardware:NoSchedule-</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: gpu-workload
@@ -542,7 +576,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Configurar nodos dedicados a infraestructura
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Configurar nodos dedicados a infraestructura
 oc label node worker-0 node-role.kubernetes.io/infra=""
 oc adm taint nodes worker-0 node-role.kubernetes.io/infra=:NoSchedule
 
@@ -579,7 +613,7 @@ oc patch config cluster -n openshift-image-registry \
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-frontend
@@ -613,7 +647,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-backend
@@ -647,7 +681,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: high-memory-app
@@ -679,7 +713,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ha-app
@@ -724,7 +758,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: scheduling.k8s.io/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
   name: high-priority
@@ -755,7 +789,7 @@ preemptionPolicy: Never  # No desaloja otros pods</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v1
 kind: Pod
 metadata:
   name: critical-pod
@@ -768,7 +802,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver PriorityClasses
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver PriorityClasses
 oc get priorityclass
 
 # Ver priority de un Pod
@@ -798,7 +832,7 @@ oc get priorityclass
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>mychart/
+<pre class="highlightjs highlight"><code class="language-none hljs">mychart/
 ├── Chart.yaml          # Metadata del chart
 ├── values.yaml         # Valores por defecto
 ├── charts/             # Dependencias
@@ -820,7 +854,7 @@ oc get priorityclass
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v2
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: v2
 name: myapp
 description: A Helm chart for my application
 type: application
@@ -843,7 +877,7 @@ dependencies:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># Valores por defecto
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Valores por defecto
 replicaCount: 2
 
 image:
@@ -896,7 +930,7 @@ affinity: {}</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "myapp.fullname" . }}
@@ -932,7 +966,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">{{/* vim: set filetype=mustache: */}}
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">{{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
 */}}
@@ -1004,7 +1038,7 @@ Create the name of the service account to use
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar repositorio de Helm
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar repositorio de Helm
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 
@@ -1033,7 +1067,7 @@ helm install my-release bitnami/nginx -n my-namespace --create-namespace</code><
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver releases
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver releases
 helm list
 helm list -A  # todos los namespaces
 
@@ -1061,7 +1095,7 @@ helm get values my-release --revision 2</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Rollback a revisión anterior
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Rollback a revisión anterior
 helm rollback my-release 1
 
 # Ver estado después del rollback
@@ -1073,7 +1107,7 @@ helm status my-release</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Desinstalar release
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Desinstalar release
 helm uninstall my-release
 
 # Conservar historial
@@ -1089,7 +1123,7 @@ helm uninstall my-release --keep-history</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Repositorios populares
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Repositorios populares
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -1107,7 +1141,7 @@ helm repo list</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># values-production.yaml
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># values-production.yaml
 replicaCount: 5
 
 image:
@@ -1165,7 +1199,7 @@ postgresql:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar con values de producción
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar con values de producción
 helm install myapp ./mychart -f values-production.yaml
 
 # Múltiples archivos de valores (se mergean)
@@ -1182,7 +1216,7 @@ helm get values myapp --all</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Crear chart desde template
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Crear chart desde template
 helm create mychart
 
 # Validar chart
@@ -1216,7 +1250,7 @@ helm repo add local http://localhost:8879</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>┌────────────────────────────────────────────┐
+<pre class="highlightjs highlight"><code class="language-none hljs">┌────────────────────────────────────────────┐
 │              Control Loop                   │
 │  ┌──────────┐        ┌──────────────────┐  │
 │  │  Watch   │───────►│ Desired State    │  │
@@ -1260,7 +1294,7 @@ helm repo add local http://localhost:8879</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: apiextensions.k8s.io/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: databases.myapp.example.com
@@ -1294,7 +1328,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: myapp.example.com/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: myapp.example.com/v1
 kind: Database
 metadata:
   name: my-database
@@ -1341,7 +1375,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver Operators disponibles
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver Operators disponibles
 oc get packagemanifests -n openshift-marketplace
 
 # Buscar Operator
@@ -1378,7 +1412,7 @@ oc get pods -n openshift-operators -l name=postgresql-operator</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver catálogos disponibles
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver catálogos disponibles
 oc get catalogsources -n openshift-marketplace
 
 # Catálogos por defecto
@@ -1393,7 +1427,7 @@ oc get catalogsources -n openshift-marketplace
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml"># Una vez instalado el Operator, crear una instancia
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml"># Una vez instalado el Operator, crear una instancia
 apiVersion: postgresql.k8s.enterprisedb.io/v1
 kind: Cluster
 metadata:
@@ -1415,7 +1449,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar OpenShift Pipelines Operator
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar OpenShift Pipelines Operator
 oc apply -f - &lt;&lt;EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -1438,7 +1472,7 @@ oc get pods -n openshift-pipelines</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: build-and-deploy
@@ -1467,7 +1501,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar OpenShift GitOps Operator
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar OpenShift GitOps Operator
 oc apply -f - &lt;&lt;EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -1493,7 +1527,7 @@ oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.a
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: argoproj.io/v1alpha1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: myapp
@@ -1519,7 +1553,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar OpenShift Logging Operator
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar OpenShift Logging Operator
 oc apply -f - &lt;&lt;EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -1558,7 +1592,7 @@ EOF</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Instalar Service Mesh Operators
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Instalar Service Mesh Operators
 oc apply -f - &lt;&lt;EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -1604,7 +1638,7 @@ EOF</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver versión actual
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver versión actual
 oc get clusterversion
 oc describe clusterversion
 
@@ -1632,7 +1666,7 @@ oc get clusteroperators | grep -v "True\sTrue\sTrue"</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: config.openshift.io/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: config.openshift.io/v1
 kind: ClusterVersion
 metadata:
   name: version
@@ -1653,7 +1687,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Ver MachineConfigPools
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Ver MachineConfigPools
 oc get machineconfigpools
 oc describe mcp master
 oc describe mcp worker
@@ -1670,7 +1704,7 @@ oc get node worker-0 -o jsonpath='{.metadata.annotations.machineconfiguration\.o
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: machineconfiguration.openshift.io/v1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
 metadata:
   labels:
@@ -1705,7 +1739,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash"># Aplicar MachineConfig
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># Aplicar MachineConfig
 oc apply -f machineconfig.yaml
 
 # Ver progreso de aplicación
@@ -1732,7 +1766,7 @@ oc get nodes -l node-role.kubernetes.io/worker</code></pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: npm-build
@@ -1757,7 +1791,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: tekton.dev/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: ci-pipeline
@@ -1811,7 +1845,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: triggers.tekton.dev/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerTemplate
 metadata:
   name: ci-trigger-template
@@ -1881,7 +1915,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>gitops-repo/
+<pre class="highlightjs highlight"><code class="language-none hljs">gitops-repo/
 ├── apps/
 │   └── myapp/
 │       ├── base/
@@ -1909,7 +1943,7 @@ spec:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
@@ -1927,7 +1961,7 @@ commonLabels:
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 namespace: myapp-production
@@ -1961,8 +1995,15 @@ configMapGenerator:
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-05-19 08:24:15 +0200
+Last updated 2026-05-20 08:26:19 +0200
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
 </body>
 </html>
