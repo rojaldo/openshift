@@ -21,7 +21,7 @@ spec:
    spec:
      containers:
      - name: contenedor-de-ejemplo
-       image: nginx:latest
+       image: quay.io/library/nginx:latest
        ports:
        - containerPort: 80
        resources:

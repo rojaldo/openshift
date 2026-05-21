@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx/nginx.pid;
+    
+    events {
+      worker_connections 1024;
+    }
+    
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+      log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+      access_log /var/log/nginx/access.log main;
+      sendfile on;
+      tcp_nopush on;
+      tcp_nodelay on;
+      keepalive_timeout 65;
+      types_hash_max_size 2048;
+      
+      server {
+        listen 8080;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        
+        location / {
+          try_files $uri $uri/ =404;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multi-container-app
+  labels:
+    app: multi-container
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multi-container
+  template:
+    metadata:
+      labels:
+        app: multi-container
+    spec:
+      securityContext:
+        fsGroup: 101
+      containers:
+      # Contenedor 1: Nginx (sin privilegios para OpenShift)
+      - name: nginx
+        image: quay.io/library/nginx:alpine
+        ports:
+        - containerPort: 8080
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 101
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - name: nginx-content
+          mountPath: /usr/share/nginx/html
+        - name: shared-volume
+          mountPath: /data
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run/nginx
+        - name: nginx-tmp
+          mountPath: /tmp
+        - name: nginx-config
+          mountPath: /etc/nginx
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c"]
+              args:
+              - echo '<h1>Hola Mundo</h1><p>Este es el contenedor nginx</p>' > /usr/share/nginx/html/index.html
+      
+      # Contenedor 2: BusyBox - descarga el contenido de nginx y lo guarda en el volumen
+      - name: busybox-downloader
+        image: quay.io/library/busybox:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Esperando a que nginx esté listo..."
+          sleep 5
+          echo "Descargando contenido de nginx..."
+          wget -O /shared/descargado.html http://localhost:8080
+          echo "Contenido descargado:"
+          cat /shared/descargado.html
+          echo "Proceso completado. Manteniendo contenedor activo..."
+          sleep infinity
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /shared
+      
+      # Contenedor 3: Ubuntu - lee el contenido del volumen compartido
+      - name: ubuntu-reader
+        image: quay.io/library/ubuntu:latest
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          echo "Contenedor lector iniciado..."
+          echo "Esperando a que se escriba el archivo..."
+          sleep 8
+          if [ -f /shared/descargado.html ]; then
+            echo "Archivo encontrado. Contenido leído:"
+            echo "======================================"
+            cat /shared/descargado.html
+            echo ""
+            echo "======================================"
+            echo "Lectura completada. Manteniendo contenedor activo..."
+            tail -f /dev/null
+          else
+            echo "Archivo no encontrado. Esperando..."
+            tail -f /dev/null
+          fi
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /shared
+      
+      volumes:
+      - name: nginx-content
+        emptyDir: {}
+      - name: shared-volume
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
+      - name: nginx-tmp
+        emptyDir: {}
+      - name: nginx-config
+        configMap:
+          name: nginx-config

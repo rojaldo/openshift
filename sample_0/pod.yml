@@ -6,16 +6,18 @@ metadata:
 spec:
   containers:
   - name: app
-    image: nginx:alpine
+    image: quay.io/library/nginx:alpine
     volumeMounts:
     - name: shared-logs
       mountPath: /var/log/nginx
   - name: sidecar
-    image: busybox
+    image: quay.io/library/busybox
     command: ["sh", "-c", "tail -f /logs/access.log"]
     volumeMounts:
     - name: shared-logs
       mountPath: /logs
   volumes:
   - name: shared-logs
-    emptyDir: {}
+    hostPath:
+      path: /tmp/logs
+      type: DirectoryOrCreate

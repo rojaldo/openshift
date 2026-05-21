@@ -40,7 +40,7 @@ spec:
     spec:
       containers:
       - name: hello-world
-        image: busybox:unstable
+        image: quay.io/library/busybox:unstable
         # Comando que ejecuta un servidor web simple que devuelve Hello World
         command:
           - /bin/sh
